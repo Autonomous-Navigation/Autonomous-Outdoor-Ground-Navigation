@@ -88,7 +88,7 @@ vehicle.simple_goto(point1)
 time.sleep(30)
 
 #print("Going towards second point for 30 seconds (groundspeed set to 10 m/s) ...")
-#point2 = LocationGlobalRelative(-35.363244, 149.168802, 20)
+#point2 = LocationGlobalRelative(-35.363244, 149.168801, 20)
 #vehicle.simple_goto(point2, groundspeed=10)
 
 # sleep so we can see the change in map
