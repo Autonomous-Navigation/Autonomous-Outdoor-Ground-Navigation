@@ -11,29 +11,27 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.animation as animation
 import matplotlib
 import argparse
+import rospy
+from std_msgs.msg import Int16
 
-plot.ion()
+# plot.ion()
 
-parser = argparse.ArgumentParser(description="run the lidar")
-parser.add_argument('--s', default='150')
-args = parser.parse_args()
-segthreshold = int(args.s)
-print(segthreshold)
+segthreshold = 150
 
 #Definte Landmark Positions
-cornerA=[0,0]
+'''cornerA=[0,0]
 cornerB=[0,280.5]
 cornerC=[164.5,280.5]
-cornerD=[164.5,0]
+cornerD=[164.5,0]'''
 
 #Define current Robot Position
-RPLpose=[20,20,45]
+# RPLpose=[20,20,45]
 
 #Distance between points to separate segments (mm)
 segthreshold = 150
 
 #list of colors to draw segments with
-colors = ['b','g','c','m','y','k','w']
+# colors = ['b','g','c','m','y','k','w']
 
 
 #Import published topics from ros and check if /scan exists. If not, start it
@@ -46,12 +44,15 @@ if not any(t == '/scan' for t in topics):
 #Initialize listener node 
 rpl.listener()
 
+distance_pub = rospy.Publisher('nearest_obstacle_distance', Int16, queue_size=1)
+delay = rospy.Rate(1)
+
 #Program loops until user exits with CTRL-C
 while True:
     #Get time at beginning of sript
     start_time = time.time()
     
-    plot.clf()
+    # plot.clf()
     
     #Import Scans from ROS topic
     scanvals = rpl.getScan()
@@ -65,7 +66,9 @@ while True:
             nearest_obstacle_distance = sample[2]
     print("Nearest Obstacle Distance is: ")
     print(nearest_obstacle_distance)
-    x = (scanvals[:,2])*(np.cos(np.deg2rad(scanvals[:,1])))
+    distance_pub.publish(nearest_obstacle_distance)
+    
+    '''x = (scanvals[:,2])*(np.cos(np.deg2rad(scanvals[:,1])))
     y = (scanvals[:,2])*(np.sin(np.deg2rad(scanvals[:,1])))
     
     #segment scan points based on segthreshold
@@ -115,13 +118,13 @@ while True:
                                   np.max(alldata[(np.where(alldata[:,2]==avglines[i,2])[0]),0])]),
                     'r')
 
-    plot.draw()
+    plot.draw()'''
 
     #Print time it took for this loop to complete
     print("Time: ", time.time() - start_time, "seconds")
-    
+    delay.sleep()
     #pause matplotlib, gives it time to draw and allows "animation"
-    plot.pause(0.001)
+    #plot.pause(0.001)
 
 
 
