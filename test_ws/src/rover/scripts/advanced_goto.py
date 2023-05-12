@@ -15,7 +15,6 @@ import time
 from coordinates import fun
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 
-
 # Set up option parsing to get connection string
 import argparse
 parser = argparse.ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
@@ -23,28 +22,14 @@ parser.add_argument('--connect',
                     help="Vehicle connection target string. If not specified, SITL automatically started and used.")
 args = parser.parse_args()
 
+connection_string = "/dev/ttyACM1"
 sitl = None
 
 
 
 # Connect to the Vehicle
-
-try:
-    connection_string = "/dev/ttyACM0"
-    print('Connecting to vehicle on: %s' % connection_string)
-    vehicle = connect(connection_string, wait_ready=True)
-except:
-    try:
-        connection_string = "/dev/ttyACM1"
-        print('Connecting to vehicle on: %s' % connection_string)
-        vehicle = connect(connection_string, wait_ready=True)
-    except:
-        try:
-            connection_string = "/dev/ttyACM2"
-            print('Connecting to vehicle on: %s' % connection_string)
-            vehicle = connect(connection_string, wait_ready=True)
-        except:
-            print("connected to some new port")
+print('Connecting to vehicle on: %s' % connection_string)
+vehicle = connect(connection_string, wait_ready=True)
 
 
 def arm_and_takeoff(aTargetAltitude):
@@ -84,38 +69,44 @@ def arm_and_takeoff(aTargetAltitude):
             break
         time.sleep(1)
 
-
-arm_and_takeoff(-50)
+#arm_and_takeoff(-50)
 
 print("Set default/target airspeed to 3")
 vehicle.airspeed = 3
 
 # Define the start and end points as latitude and longitude coordinates
-start_lat = 33.6432884
-start_lng = -117.8411328
-end_lat = 33.642420
-end_lng = -117.841902
+start_lat = vehicle.location.global_relative_frame.lat
+start_lng = vehicle.location.global_relative_frame.lon
+end_lat = 33.6428588
+end_lng = -117.8418627
 
-#arr = fun(start_lat ,start_lng,end_lat ,end_lng)
-arr = [[33.645632, -117.842293], [33.645583, -117.841603]]
+arr = fun(start_lat ,start_lng,end_lat ,end_lng)
+
+#arr = [[start_lat, start_lng],[33.643259,-117.841198]]
 i=1
 print(arr)
 reached = 0
+if arr[0][0] == start_lat:
+	print("both are same")
+else:
+	print("false")
 for pts in arr:
 	print(pts)
 	print(i)
-	
-	point1 = LocationGlobalRelative(pts[0],pts[1], 0)
+	print(pts[0])
+	print(pts[1])
+	print(type(pts[0]))
+	print(type(pts[1]))
+	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
 	reached =0
 	vehicle.simple_goto(point1)
-	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.000001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.000001)):
+	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.00001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.0001)):
 		print("going to point ", i)
 		time.sleep(1)
 		
 	
 	i=i+1
 	# sleep so we can see the change in map
-	time.sleep(30)
 
 #print("Going towards second point for 30 seconds (groundspeed set to 10 m/s) ...")
 #point2 = LocationGlobalRelative(-35.363244, 149.168801, 20)

@@ -43,7 +43,7 @@ def fun(start_lat, start_lng, end_lat, end_lng):
 	        ratio = j / n_points
 	        lat = p1[1] * (1-ratio) + p2[1] * ratio
 	        lng = p1[0] * (1-ratio) + p2[0] * ratio
-	        new_path_points.append([lng, lat])
+	        new_path_points.append([lat, lng])
 	
 	# Create a Folium map centered on the start point
 	#map_center = [start_lat, start_lng]

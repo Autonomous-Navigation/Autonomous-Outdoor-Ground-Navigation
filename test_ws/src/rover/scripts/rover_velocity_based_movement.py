@@ -103,7 +103,7 @@ def backup(): ##rough function to easily reverse without needing to use a GPS na
 		print("Waiting for drone to enter GUIDED flight mode")
 		time.sleep(1)
 
-stop = 1
+stop = 0
 
 def calculation_for_stopage(data):
 	print(data.data)
@@ -111,6 +111,7 @@ def calculation_for_stopage(data):
 	if data.data < 500:
 #		send_global_ned_velocity(0,0,0)
 		stop = 1
+		
 		#time.sleep(1)
 	else:
 		stop = 0
@@ -122,8 +123,8 @@ vehicle = connectMyCopter()
 print("The Pixhawk is connected with Jetson Nano")
 arm()
 
-rospy.init_node('velocity')
-rospy.Subscriber("nearest_obstacle_distance", Int16, calculation_for_stopage)
+#rospy.init_node('velocity')
+#rospy.Subscriber("nearest_obstacle_distance", Int16, calculation_for_stopage)
 
 
 

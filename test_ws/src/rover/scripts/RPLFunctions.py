@@ -35,7 +35,7 @@ def getScan():
     for i in range(len(scan.ranges)):
         angles.append(anglemin + angleincr*i)
     angles = np.array(angles[:], copy=False, subok=True, ndmin=2).T
-    
+    print("111111")
     #sets up the scanvals variable as a numpy array with [intensities angles ranges]
     scanvals = np.concatenate((intensities,angles,ranges),axis=1)
     #deletes rows where intesnity == 0 

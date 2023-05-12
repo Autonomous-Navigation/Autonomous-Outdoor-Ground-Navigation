@@ -1,4 +1,9 @@
+
 #!/usr/bin/env python
+"""
+
+from coordinates import fun
+from __future__ import print_function
 # -*- coding: utf-8 -*-
 
 """
@@ -10,9 +15,9 @@ Demonstrates how to arm and takeoff in Copter and how to navigate to points usin
 Full documentation is provided at http://python.dronekit.io/examples/simple_goto.html
 """
 
+from coordinates import fun
 from __future__ import print_function
 import time
-from coordinates import fun
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 
 
@@ -23,28 +28,20 @@ parser.add_argument('--connect',
                     help="Vehicle connection target string. If not specified, SITL automatically started and used.")
 args = parser.parse_args()
 
+connection_string = "/dev/ttyACM0" #args.connect
 sitl = None
 
 
+# Start SITL if no connection string specified
+if not connection_string:
+    import dronekit_sitl
+    sitl = dronekit_sitl.start_default()
+    connection_string = sitl.connection_string()
+
 
 # Connect to the Vehicle
-
-try:
-    connection_string = "/dev/ttyACM0"
-    print('Connecting to vehicle on: %s' % connection_string)
-    vehicle = connect(connection_string, wait_ready=True)
-except:
-    try:
-        connection_string = "/dev/ttyACM1"
-        print('Connecting to vehicle on: %s' % connection_string)
-        vehicle = connect(connection_string, wait_ready=True)
-    except:
-        try:
-            connection_string = "/dev/ttyACM2"
-            print('Connecting to vehicle on: %s' % connection_string)
-            vehicle = connect(connection_string, wait_ready=True)
-        except:
-            print("connected to some new port")
+print('Connecting to vehicle on: %s' % connection_string)
+vehicle = connect(connection_string, wait_ready=True)
 
 
 def arm_and_takeoff(aTargetAltitude):
@@ -62,8 +59,6 @@ def arm_and_takeoff(aTargetAltitude):
     # Copter should arm in GUIDED mode
     vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
-    print(vehicle.mode)
-
 
     # Confirm vehicle armed before attempting to take off
     while not vehicle.armed:
@@ -85,45 +80,33 @@ def arm_and_takeoff(aTargetAltitude):
         time.sleep(1)
 
 
-arm_and_takeoff(-50)
+arm_and_takeoff(-5)
 
 print("Set default/target airspeed to 3")
 vehicle.airspeed = 3
 
-# Define the start and end points as latitude and longitude coordinates
-start_lat = 33.6432884
-start_lng = -117.8411328
+start_lat =33.643420
+start_lng =-117.840839
 end_lat = 33.642420
-end_lng = -117.841902
+end_lng =-117.841902
 
-#arr = fun(start_lat ,start_lng,end_lat ,end_lng)
-arr = [[33.645632, -117.842293], [33.645583, -117.841603]]
-i=1
-print(arr)
-reached = 0
+arr = fun(start_lat, start_lng, end_lat, end_lng)
+
 for pts in arr:
-	print(pts)
-	print(i)
-	
+	print("Going towards first point for 30 seconds ...")
 	point1 = LocationGlobalRelative(pts[0],pts[1], 0)
-	reached =0
 	vehicle.simple_goto(point1)
-	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.000001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.000001)):
-		print("going to point ", i)
-		time.sleep(1)
-		
 	
-	i=i+1
 	# sleep so we can see the change in map
-	time.sleep(30)
-
-#print("Going towards second point for 30 seconds (groundspeed set to 10 m/s) ...")
-#point2 = LocationGlobalRelative(-35.363244, 149.168801, 20)
-#vehicle.simple_goto(point2, groundspeed=10)
-
-# sleep so we can see the change in map
-#time.sleep(30)
-
+	#time.sleep(30)
+	
+	#print("Going towards second point for 30 seconds (groundspeed set to 10 m/s) ...")
+	#point2 = LocationGlobalRelative(-35.363244, 149.168801, 20)
+	#vehicle.simple_goto(point2, groundspeed=10)
+	
+	# sleep so we can see the change in map
+time.sleep(5)
+	
 print("Returning to Launch")
 vehicle.mode = VehicleMode("RTL")
 

@@ -66,7 +66,8 @@ while True:
             nearest_obstacle_distance = sample[2]
     print("Nearest Obstacle Distance is: ")
     print(nearest_obstacle_distance)
-    distance_pub.publish(nearest_obstacle_distance)
+    if nearest_obstacle_distance != float('inf'):
+        distance_pub.publish(nearest_obstacle_distance)
     
     '''x = (scanvals[:,2])*(np.cos(np.deg2rad(scanvals[:,1])))
     y = (scanvals[:,2])*(np.sin(np.deg2rad(scanvals[:,1])))
