@@ -8,7 +8,7 @@ from coordinates import fun
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 import rospy
 from std_msgs.msg import Int16
-
+from std_msgs.msg import Float64MultiArray
 from dronekit import APIException
 
 
@@ -24,14 +24,29 @@ parser.add_argument('--connect',
                     help="Vehicle connection target string. If not specified, SITL automatically started and used.")
 args = parser.parse_args()
 
-connection_string = "/dev/ttyACM0"
+try:
+    connection_string = "/dev/ttyACM0"
+    print('Connecting to vehicle on: %s' % connection_string)
+    vehicle = connect(connection_string, wait_ready=True)
+except:
+    try:
+        connection_string = "/dev/ttyACM1"
+        print('Connecting to vehicle on: %s' % connection_string)
+        vehicle = connect(connection_string, wait_ready=True)
+    except:
+        try:
+            connection_string = "/dev/ttyACM2"
+            print('Connecting to vehicle on: %s' % connection_string)
+            vehicle = connect(connection_string, wait_ready=True)
+        except:
+            print("connected to some new port")
 sitl = None
 
 
 
 # Connect to the Vehicle
-print('Connecting to vehicle on: %s' % connection_string)
-vehicle = connect(connection_string, wait_ready=True)
+#print('Connecting to vehicle on: %s' % connection_string)
+#vehicle = connect(connection_string, wait_ready=True)
 
 
 def arm_and_takeoff(aTargetAltitude):
@@ -116,27 +131,29 @@ def send_global_ned_velocity(vx, vy, vz):
 
 
 def backup(): ##rough function to easily reverse without needing to use a GPS navigation based movement
-	vehicle.mode = VehicleMode("GUIDED")
-	while vehicle.mode!='GUIDED':
+	mode = "GUIDED "
+	vehicle.mode = VehicleMode(mode)
+	while vehicle.mode!=mode:
 		print("Waiting for drone to enter MANUAL flight mode")
 		time.sleep(1)
 	vehicle.channels.overrides = {'2':1400}
 	time.sleep(1)
 	vehicle.channels.overrides = {'2':1500}
 
-	vehicle.mode = VehicleMode("GUIDED")
-	while vehicle.mode!='GUIDED':
+	vehicle.mode = VehicleMode(mode)
+	while vehicle.mode!=mode:
 		print("Waiting for drone to enter GUIDED flight mode")
 		time.sleep(1)
 
-arm_and_takeoff(-50)
+#arm_and_takeoff(-50)
 stop = 0
-
+obstacle = 0
+'''
 def calculation_for_stopage(data):
 	global point1
 	print(data.data)
 	global stop
-	if data.data < 500:
+	if data.data < 4000:
 		send_global_ned_velocity(0,0,0)
 		stop = 1
 		#time.sleep(1)
@@ -145,14 +162,31 @@ def calculation_for_stopage(data):
 		if stop == 1:
 			vehicle.simple_goto(point1)
 		stop = 0
-		print("go with flow")
+'''
+def calculation_for_stopage(obstacle_data):
+	#global point1
+	print(obstacle_data.data)
+	global stop, obstacle 
+	
+	if obstacle_data.data[1] < 4000:
+		obstacle = 1
+		if obstacle_data.data[0] < obstacle_data.data[2]:
+			print("turn right")
+			send_local_ned_velocity(1,1,0)
+		else:
+			print("turn left")
+			send_local_ned_velocity(1,-1,0)
+	else:
+		#if obstacle == 1:
+		#	vehicle.simple_goto(point1)
+		obstacle = 0
 
 rospy.init_node('velocity')
-rospy.Subscriber("nearest_obstacle_distance", Int16, calculation_for_stopage)
+rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
 
 
 print("Set default/target airspeed to 3")
-vehicle.airspeed = 3
+#vehicle.airspeed = 3
 
 # Define the start and end points as latitude and longitude coordinates
 start_lat = 33.6432884
@@ -160,40 +194,37 @@ start_lng = -117.8411328
 end_lat = 33.643147
 end_lng = -117.841397
 
-arr = fun(start_lat ,start_lng,end_lat ,end_lng)
+#arr = fun(start_lat ,start_lng,end_lat ,end_lng)
 
 #arr = [[start_lat, start_lng],[33.643259,-117.841198]]
 i=1
 point1 = None
 
 
-
+'''
 for pts in arr:
-	print(pts)
-	print(i)
-	print(pts[0])
-	print(pts[1])
-	print(type(pts[0]))
-	print(type(pts[1]))
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
 	reached =0
 	vehicle.simple_goto(point1)
-	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.00001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.0001)):
+	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.00001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.00001)):
 		print("going to point ", i)
 		time.sleep(1)
 		print("before if", stop)
-		#if stop == 1:
-		#	send_global_ned_velocity(0,0,0)
-		#	print("stopped2")
 	i=i+1
+	time.sleep(5)
 	# sleep so we can see the change in map
+'''
 
-#print("Going towards second point for 30 seconds (groundspeed set to 10 m/s) ...")
-#point2 = LocationGlobalRelative(-35.363244, 149.168801, 20)
-#vehicle.simple_goto(point2, groundspeed=10)
+counter=0
+while True:
+	if obstacle == 0:
+	        send_local_ned_velocity(1,0,0) 
+	        print("run")
+	        #time.sleep(1)
+        counter = counter + 1
 
 # sleep so we can see the change in map
-#time.sleep(30)
+time.sleep(5)
 
 print("Returning to Launch")
 vehicle.mode = VehicleMode("RTL")

@@ -13,6 +13,7 @@ import matplotlib
 import argparse
 import rospy
 from std_msgs.msg import Int16
+from std_msgs.msg import Float64MultiArray
 
 # plot.ion()
 
@@ -44,8 +45,9 @@ if not any(t == '/scan' for t in topics):
 #Initialize listener node 
 rpl.listener()
 
-distance_pub = rospy.Publisher('nearest_obstacle_distance', Int16, queue_size=1)
+distance_pub = rospy.Publisher('nearest_obstacle_distance', Float64MultiArray, queue_size=1)
 delay = rospy.Rate(1)
+
 
 #Program loops until user exits with CTRL-C
 while True:
@@ -58,16 +60,64 @@ while True:
     scanvals = rpl.getScan()
     print(scanvals)
     print(scanvals.shape)
-    print("Detecting obstacle")
-    nearest_obstacle_distance = float('inf')
     
-    for sample in scanvals:
-        if sample[2] < nearest_obstacle_distance:
-            nearest_obstacle_distance = sample[2]
-    print("Nearest Obstacle Distance is: ")
-    print(nearest_obstacle_distance)
-    if nearest_obstacle_distance != float('inf'):
-        distance_pub.publish(nearest_obstacle_distance)
+    first_index = None
+    second_index = None
+    third_index = None
+    
+    for i, sample in enumerate(scanvals):
+        if sample[1] > -175:
+	    first_index = i
+	    break
+    for i, sample in enumerate(scanvals):
+	if sample[1] > -155:
+	    second_index = i
+	    break
+    for i, sample in enumerate(scanvals):
+        if sample[1] > 175:
+	    third_index = i
+	    break
+
+    left_portion = scanvals[first_index:second_index,:]
+    right_portion = scanvals[second_index:third_index,:]
+    middle_portion = np.concatenate((scanvals[:first_index,:], scanvals[third_index:,:]), 0)
+
+    print("Detecting middle obstacle")
+    middle_obstacle_distance = float('inf')
+    for sample in middle_portion:
+        if sample[2] < middle_obstacle_distance:
+            middle_obstacle_distance = sample[2]
+    if middle_obstacle_distance == float('inf'):
+	middle_obstacle_distance = 25000
+    print("Middle Obstacle Distance is: ")
+    print(middle_obstacle_distance)
+
+    print("Detecting left obstacle")
+    left_obstacle_distance = float('inf')
+    for sample in left_portion:
+        if sample[2] < left_obstacle_distance:
+            left_obstacle_distance = sample[2]
+    if left_obstacle_distance == float('inf'):
+	left_obstacle_distance = 25000
+    print("Left Obstacle Distance is: ")
+    print(left_obstacle_distance)
+
+    print("Detecting right obstacle")
+    right_obstacle_distance = float('inf')
+    for sample in right_portion:
+        if sample[2] < right_obstacle_distance:
+            right_obstacle_distance = sample[2]
+    if right_obstacle_distance == float('inf'):
+	right_obstacle_distance = 25000
+    print("Right Obstacle Distance is: ")
+    print(right_obstacle_distance)
+
+    obstacle_distance = Float64MultiArray()
+    obstacle_distance.data = [left_obstacle_distance, middle_obstacle_distance, right_obstacle_distance]
+    if middle_obstacle_distance != float('inf'):
+        distance_pub.publish(obstacle_distance)
+	
+    
     
     '''x = (scanvals[:,2])*(np.cos(np.deg2rad(scanvals[:,1])))
     y = (scanvals[:,2])*(np.sin(np.deg2rad(scanvals[:,1])))
