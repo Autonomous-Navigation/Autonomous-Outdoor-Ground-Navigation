@@ -1,0 +1,2 @@
+- setup-file:
+    local-name: /home/jetson-07/test_ws/devel/setup.sh
