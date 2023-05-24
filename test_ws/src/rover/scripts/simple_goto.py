@@ -97,7 +97,8 @@ end_lat = 33.642420
 end_lng = -117.841902
 
 #arr = fun(start_lat ,start_lng,end_lat ,end_lng)
-arr = [[33.645632, -117.842293], [33.645583, -117.841603]]
+#arr = [[33.645632, -117.842293], [33.645583, -117.841603]]
+arr = [[33.643295, -117.841057],[33.643273, -117.841214],[33.643149, -117.841442],[33.643067, -117.841568],[33.642955, -117.841855],[33.642867, -117.841896]]
 i=1
 print(arr)
 reached = 0
@@ -110,12 +111,11 @@ for pts in arr:
 	vehicle.simple_goto(point1)
 	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.000001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.000001)):
 		print("going to point ", i)
-		time.sleep(1)
-		
-	
+		time.sleep(2)
 	i=i+1
+	print("reached pt 1")
 	# sleep so we can see the change in map
-	time.sleep(30)
+	time.sleep(5)
 
 #print("Going towards second point for 30 seconds (groundspeed set to 10 m/s) ...")
 #point2 = LocationGlobalRelative(-35.363244, 149.168801, 20)
@@ -124,8 +124,8 @@ for pts in arr:
 # sleep so we can see the change in map
 #time.sleep(30)
 
-print("Returning to Launch")
-vehicle.mode = VehicleMode("RTL")
+#print("Returning to Launch")
+#vehicle.mode = VehicleMode("RTL")
 
 # Close vehicle object before exiting script
 print("Close vehicle object")
