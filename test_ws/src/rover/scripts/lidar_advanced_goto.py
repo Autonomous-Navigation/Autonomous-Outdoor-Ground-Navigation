@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 import time
-from coordinates import fun
+from coordinates_walking import fun
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 import rospy
 from std_msgs.msg import Int16
@@ -98,7 +98,7 @@ def send_local_ned_velocity(vx, vy, vz):
 		0, 0, 0,
 		0, 0)
 	vehicle.send_mavlink(msg)
-	print("Sent MAVLink message")
+#	print("Sent MAVLink message")
 	vehicle.flush()
 
 def reverse(direction):
@@ -145,13 +145,13 @@ def backup(): ##rough function to easily reverse without needing to use a GPS na
 		print("Waiting for drone to enter GUIDED flight mode")
 		time.sleep(1)
 
-#arm_and_takeoff(-50)
+arm_and_takeoff(-50)
 stop = 0
 obstacle = 0
+point1 = None
 '''
 def calculation_for_stopage(data):
 	global point1
-	print(data.data)
 	global stop
 	if data.data < 4000:
 		send_global_ned_velocity(0,0,0)
@@ -164,21 +164,24 @@ def calculation_for_stopage(data):
 		stop = 0
 '''
 def calculation_for_stopage(obstacle_data):
-	#global point1
+	global point1
 	print(obstacle_data.data)
 	global stop, obstacle 
 	
-	if obstacle_data.data[1] < 4000:
+	if obstacle_data.data[1] < 1000:
 		obstacle = 1
-		if obstacle_data.data[0] < obstacle_data.data[2]:
+		if max(obstacle_data.data[0] , obstacle_data.data[2]) < 500:
+			send_local_ned_velocity(0,0,0)
+			print("Stop, all ways are blocked")
+		elif obstacle_data.data[0] < obstacle_data.data[2]:
 			print("turn right")
 			send_local_ned_velocity(1,1,0)
 		else:
 			print("turn left")
 			send_local_ned_velocity(1,-1,0)
 	else:
-		#if obstacle == 1:
-		#	vehicle.simple_goto(point1)
+		if obstacle == 1:
+			vehicle.simple_goto(point1)
 		obstacle = 0
 
 rospy.init_node('velocity')
@@ -189,32 +192,41 @@ print("Set default/target airspeed to 3")
 #vehicle.airspeed = 3
 
 # Define the start and end points as latitude and longitude coordinates
+'''
 start_lat = 33.6432884
 start_lng = -117.8411328
 end_lat = 33.643147
 end_lng = -117.841397
+'''
 
-#arr = fun(start_lat ,start_lng,end_lat ,end_lng)
+#arr = [[33.644768, -117.842124]]
+#arr = [[33.644887, -117.842260], [33.645057, -117.842449]]
+start_lat = vehicle.location.global_relative_frame.lat #33.645142
+start_lng = vehicle.location.global_relative_frame.lon #-117.842741
+end_lat = 33.644765
+end_lng = -117.842129
+arr = fun(start_lat ,start_lng,end_lat ,end_lng)
 
 #arr = [[start_lat, start_lng],[33.643259,-117.841198]]
 i=1
-point1 = None
 
 
-'''
+print(arr)
 for pts in arr:
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
 	reached =0
 	vehicle.simple_goto(point1)
 	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.00001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.00001)):
+		print("Current: ",vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon)
+		print("Target: ",pts[0],pts[1])
 		print("going to point ", i)
-		time.sleep(1)
-		print("before if", stop)
+		time.sleep(3)
+	print("reached pt: ",i)
 	i=i+1
 	time.sleep(5)
 	# sleep so we can see the change in map
-'''
 
+'''
 counter=0
 while True:
 	if obstacle == 0:
@@ -222,7 +234,7 @@ while True:
 	        print("run")
 	        #time.sleep(1)
         counter = counter + 1
-
+'''
 # sleep so we can see the change in map
 time.sleep(5)
 
