@@ -9,7 +9,7 @@ end_lat = 33.643371186511125
 end_lng = -117.84197631748603
 
 # OpenRouteService API Key
-api_key = "5b3ce3597851110001cf624852531326e69d44d98933a46f80f14de7"  # Replace this with your OpenRouteService API Key
+api_key = "**"  # Replace this with your OpenRouteService API Key
 
 # Geocode the start and end points to get their addresses
 def geocode(lat, lng):
