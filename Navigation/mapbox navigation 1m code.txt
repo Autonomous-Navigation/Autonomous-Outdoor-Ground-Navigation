@@ -18,7 +18,7 @@ start_address = geocode(start_lat, start_lng)
 end_address = geocode(end_lat, end_lng)
 
 # Build the request URL for the Mapbox API
-url = f"https://api.mapbox.com/directions/v5/mapbox/walking/{start_lng},{start_lat};{end_lng},{end_lat}?geometries=geojson&access_token=pk.eyJ1Ijoicmlja3liZXZhbjUyIiwiYSI6ImNsaHJ6NWMxbzBkNDgzanFtcXh6MHRjbGgifQ.87Y6PMFUsopjO5MNi7Hicw"
+url = f"https://api.mapbox.com/directions/v5/mapbox/walking/{start_lng},{start_lat};{end_lng},{end_lat}?geometries=geojson&access_token=***"
 
 # Send the request to the OpenStreetMap API and parse the response
 response = requests.get(url)
