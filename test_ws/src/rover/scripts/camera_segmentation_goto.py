@@ -215,7 +215,7 @@ def keeping_on_road(segmentation_data):
 		z = len(col) - np.count_nonzero(col)
 		zeros.append(z)
 	print(zeros)
-	time.sleep(60)
+	time.sleep(4)
 
 rospy.init_node('segmentation')
 #rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
@@ -238,14 +238,14 @@ start_lat = 33.645142 #vehicle.location.global_relative_frame.lat #33.645142
 start_lng = -117.842741 #vehicle.location.global_relative_frame.lon #-117.842741
 end_lat = 33.644765
 end_lng = -117.842129
-arr = fun(start_lat ,start_lng,end_lat ,end_lng)
+#arr = fun(start_lat ,start_lng,end_lat ,end_lng)
 
 #arr = [[start_lat, start_lng],[33.643259,-117.841198]]
 i=1
 
 rospy.spin()
 
-print(arr)
+'''print(arr)
 for pts in arr:
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
 	reached =0
@@ -261,6 +261,7 @@ for pts in arr:
 	# sleep so we can see the change in map
 
 '''
+'''
 counter=0
 while True:
 	if obstacle == 0:
@@ -270,10 +271,10 @@ while True:
         counter = counter + 1
 '''
 # sleep so we can see the change in map
-time.sleep(5)
+time.sleep(2)
 
 print("Returning to Launch")
-vehicle.mode = VehicleMode("RTL")
+#vehicle.mode = VehicleMode("RTL")
 
 # Close vehicle object before exiting script
 print("Close vehicle object")

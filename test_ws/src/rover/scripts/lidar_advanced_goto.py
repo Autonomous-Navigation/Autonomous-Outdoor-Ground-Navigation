@@ -145,7 +145,7 @@ def backup(): ##rough function to easily reverse without needing to use a GPS na
 		print("Waiting for drone to enter GUIDED flight mode")
 		time.sleep(1)
 
-arm_and_takeoff(-50)
+#arm_and_takeoff(-50)
 stop = 0
 obstacle = 0
 point1 = None
@@ -184,8 +184,7 @@ def calculation_for_stopage(obstacle_data):
 			vehicle.simple_goto(point1)
 		obstacle = 0
 
-rospy.init_node('velocity')
-rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
+
 
 
 print("Set default/target airspeed to 3")
@@ -203,8 +202,8 @@ end_lng = -117.841397
 #arr = [[33.644887, -117.842260], [33.645057, -117.842449]]
 start_lat = vehicle.location.global_relative_frame.lat #33.645142
 start_lng = vehicle.location.global_relative_frame.lon #-117.842741
-end_lat = 33.644765
-end_lng = -117.842129
+end_lat = 33.642926
+end_lng = -117.841810
 arr = fun(start_lat ,start_lng,end_lat ,end_lng)
 
 #arr = [[start_lat, start_lng],[33.643259,-117.841198]]
@@ -212,6 +211,10 @@ i=1
 
 
 print(arr)
+
+rospy.init_node('velocity')
+rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
+
 for pts in arr:
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
 	reached =0

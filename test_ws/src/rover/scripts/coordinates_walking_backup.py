@@ -22,20 +22,17 @@ def fun(start_lat, start_lng, end_lat, end_lng):
 	
 	start_address = geocode(start_lat, start_lng)
 	end_address = geocode(end_lat, end_lng)
-
-	api_key = "5b3ce3597851110001cf624852531326e69d44d98933a46f80f14de7"
 	
 	# Build the request URL for the Mapbox API
 	#url = f"https://api.mapbox.com/directions/v5/mapbox/walking/{start_lng},{start_lat};{end_lng},{end_lat}?geometries=geojson&access_token=pk.eyJ1Ijoicmlja3liZXZhbjUyIiwiYSI6ImNsaHJ6NWMxbzBkNDgzanFtcXh6MHRjbGgifQ.87Y6PMFUsopjO5MNi7Hicw"
-	#url = "https://api.mapbox.com/directions/v5/mapbox/walking/{0},{1};{2},{3}?geometries=geojson&access_token=pk.eyJ1Ijoicmlja3liZXZhbjUyIiwiYSI6ImNsaHJ6NWMxbzBkNDgzanFtcXh6MHRjbGgifQ.87Y6PMFUsopjO5MNi7Hicw".format(start_lng, start_lat, end_lng, end_lat)
-	url = "https://api.openrouteservice.org/v2/directions/cycling-regular?api_key={0}&start={1},{2}&end={3},{4}".format(api_key, start_lng, start_lat, end_lng, end_lat)
+	url = "https://api.mapbox.com/directions/v5/mapbox/walking/{0},{1};{2},{3}?geometries=geojson&access_token=pk.eyJ1Ijoicmlja3liZXZhbjUyIiwiYSI6ImNsaHJ6NWMxbzBkNDgzanFtcXh6MHRjbGgifQ.87Y6PMFUsopjO5MNi7Hicw".format(start_lng, start_lat, end_lng, end_lat)
 
 	# Send the request to the Mapbox API and parse the response
 	response = requests.get(url)
 	data = response.json()
 	
 	# Extract the latitude and longitude of each point in the path
-	path_points = data['features'][0]['geometry']['coordinates']
+	path_points = data['routes'][0]['geometry']['coordinates']
 	
 	# Add a new point every 5 meters along each segment of the path
 	new_path_points = []

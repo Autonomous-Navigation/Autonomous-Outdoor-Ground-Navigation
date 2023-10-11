@@ -1,0 +1,11 @@
+<launch>
+  <node name="realsense_camera" pkg="realsense2_camera" type="realsense2_camera_node" output="screen">
+    <param name="camera_name" value="camera" />
+    <param name="serial_no" value="215122252289" />
+    <param name="usb_port_id" value="" />
+    <param name="enable_color" value="true" />
+    <param name="enable_depth" value="true" />
+    <!-- Add more parameters as needed -->
+  </node>
+</launch>
+
