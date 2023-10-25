@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -10,6 +9,8 @@ import rospy
 from std_msgs.msg import Int16
 from std_msgs.msg import Float64MultiArray
 from dronekit import APIException
+from std_msgs.msg import Int32  # Import Int32 message type
+
 
 
 import socket
@@ -17,6 +18,7 @@ import socket
 import math
 import argparse
 from pymavlink import mavutil
+
 
 # Set up option parsing to get connection string
 parser = argparse.ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
@@ -42,6 +44,10 @@ except:
             print("connected to some new port")
 sitl = None
 
+start_lat = vehicle.location.global_relative_frame.lat #33.645142
+start_lng = vehicle.location.global_relative_frame.lon #-117.842741
+end_lat = 33.642687
+end_lng = -117.841880
 
 
 # Connect to the Vehicle
@@ -149,28 +155,15 @@ def backup(): ##rough function to easily reverse without needing to use a GPS na
 stop = 0
 obstacle = 0
 point1 = None
-'''
-def calculation_for_stopage(data):
-	global point1
-	global stop
-	if data.data < 4000:
-		send_global_ned_velocity(0,0,0)
-		stop = 1
-		#time.sleep(1)
-		print("stopped")
-	else:
-		if stop == 1:
-			vehicle.simple_goto(point1)
-		stop = 0
-'''
+
 def calculation_for_stopage(obstacle_data):
 	global point1
 	print(obstacle_data.data)
 	global stop, obstacle 
 	
-	if obstacle_data.data[1] < 1000:
+	if obstacle_data.data[1] < 2000:
 		obstacle = 1
-		if max(obstacle_data.data[0] , obstacle_data.data[2]) < 500:
+		if max(obstacle_data.data[0] , obstacle_data.data[2]) < 1000:
 			send_local_ned_velocity(0,0,0)
 			print("Stop, all ways are blocked")
 		elif obstacle_data.data[0] < obstacle_data.data[2]:
@@ -185,35 +178,29 @@ def calculation_for_stopage(obstacle_data):
 		obstacle = 0
 
 
+def calculation_for_direction_using_segnet(segnet_direction):
+	global point1
+	print(segnet_direction.data)
+	
+	if segnet_direction.data < -3:
+		print("turn left")
+		send_local_ned_velocity(1,-1,0)
+	elif segnet_direction.data > 3:
+		print("turn right")
+		send_local_ned_velocity(1,1,0)
+	else:
+		vehicle.simple_goto(point1)
 
 
-print("Set default/target airspeed to 3")
-#vehicle.airspeed = 3
-
-# Define the start and end points as latitude and longitude coordinates
-'''
-start_lat = 33.6432884
-start_lng = -117.8411328
-end_lat = 33.643147
-end_lng = -117.841397
-'''
-
-#arr = [[33.644768, -117.842124]]
-#arr = [[33.644887, -117.842260], [33.645057, -117.842449]]
-start_lat = vehicle.location.global_relative_frame.lat #33.645142
-start_lng = vehicle.location.global_relative_frame.lon #-117.842741
-end_lat = 33.642926
-end_lng = -117.841810
 arr = fun(start_lat ,start_lng,end_lat ,end_lng)
 
-#arr = [[start_lat, start_lng],[33.643259,-117.841198]]
 i=1
 
-
-print(arr)
-
 rospy.init_node('velocity')
-rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
+#rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
+rospy.Subscriber("segnet_direction", Int32, calculation_for_direction_using_segnet)
+pub = rospy.Publisher('gps_data', Float64MultiArray, queue_size=1)
+rate = rospy.Rate(1)  # 1 Hz
 
 for pts in arr:
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
@@ -226,18 +213,20 @@ for pts in arr:
 		time.sleep(3)
 	print("reached pt: ",i)
 	i=i+1
+	gps_msg = Float64MultiArray()
+
+	# Populate the multi-array with GPS data (latitude and longitude)
+	gps_msg.data = [
+		vehicle.location.global_relative_frame.lat,  # Replace with your actual GPS data source for latitude
+		vehicle.location.global_relative_frame.lon,  # Replace with your actual GPS data source for longitude
+		pts[0],
+		pts[1],
+	]
+
+	pub.publish(gps_msg)
 	time.sleep(5)
 	# sleep so we can see the change in map
 
-'''
-counter=0
-while True:
-	if obstacle == 0:
-	        send_local_ned_velocity(1,0,0) 
-	        print("run")
-	        #time.sleep(1)
-        counter = counter + 1
-'''
 # sleep so we can see the change in map
 time.sleep(5)
 

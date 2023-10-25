@@ -1,0 +1,10 @@
+obstacle_range: 2.5
+raytrace_range: 3.0  # Maximum range to perform ray tracing (in meters)
+footprint: [[-0.3, -0.3], [-0.3, 0.3], [0.3, 0.3], [0.3, -0.3]]  # Robot footprint (adjust based on your robot)
+inflation_radius: 0.55  # Radius around obstacles for inflation (in meters)
+observation_sources: laser_scan_sensor  # List of observation sources
+laser_scan_sensor: {data_type: LaserScan, topic: /scan, marking: true, clearing: true}  # Example LaserScan source
+map_type: costmap  # Type of map (costmap or voxel)
+transform_tolerance: 0.3  # Transform tolerance for map to robot base (in seconds)
+observation_persistence: 0.0  # Time for observations to persist in the map (in seconds)
+
