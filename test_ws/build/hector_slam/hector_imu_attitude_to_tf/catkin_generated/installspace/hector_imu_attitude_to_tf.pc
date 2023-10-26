@@ -1,8 +1,0 @@
-prefix=/home/jetson-07/test_ws/install
-
-Name: hector_imu_attitude_to_tf
-Description: Description of hector_imu_attitude_to_tf
-Version: 0.5.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: roscpp sensor_msgs tf

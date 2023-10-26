@@ -1,8 +1,0 @@
-prefix=/home/jetson-07/test_ws/devel
-
-Name: hector_geotiff_launch
-Description: Description of hector_geotiff_launch
-Version: 0.5.2
-Cflags: 
-Libs: -L${prefix}/lib 
-Requires: 
