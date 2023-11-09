@@ -10,20 +10,15 @@ from std_msgs.msg import Int16
 from std_msgs.msg import Float64MultiArray
 from dronekit import APIException
 from std_msgs.msg import Int32, Bool  # Import Int32 message type
-
-
-
 import socket
-#import exceptions
-import math
 import argparse
 from pymavlink import mavutil
+from argparse import ArgumentParser
 
 
 # Set up option parsing to get connection string
-parser = argparse.ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
-parser.add_argument('--connect',
-                    help="Vehicle connection target string. If not specified, SITL automatically started and used.")
+parser = ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
+parser.add_argument('--connect', help="Vehicle connection target string. If not specified, SITL automatically started and used.")
 args = parser.parse_args()
 
 try:
@@ -46,14 +41,8 @@ sitl = None
 
 start_lat = vehicle.location.global_relative_frame.lat #33.645142
 start_lng = vehicle.location.global_relative_frame.lon #-117.842741
-end_lat = 33.642687
-end_lng = -117.841880
-
-
-# Connect to the Vehicle
-#print('Connecting to vehicle on: %s' % connection_string)
-#vehicle = connect(connection_string, wait_ready=True)
-
+end_lat = 33.644772
+end_lng = -117.842121
 
 def arm_and_takeoff(aTargetAltitude):
     """
@@ -104,7 +93,6 @@ def send_local_ned_velocity(vx, vy, vz):
 		0, 0, 0,
 		0, 0)
 	vehicle.send_mavlink(msg)
-#	print("Sent MAVLink message")
 	vehicle.flush()
 
 def reverse(direction):
@@ -151,7 +139,7 @@ def backup(): ##rough function to easily reverse without needing to use a GPS na
 		print("Waiting for drone to enter GUIDED flight mode")
 		time.sleep(1)
 
-#arm_and_takeoff(-50)
+#arm_and_takeoff(-50) #uncommented this 
 stop = 0
 obstacle = 0
 point1 = None
@@ -161,16 +149,16 @@ def calculation_for_stopage(obstacle_data):
 	print(obstacle_data.data)
 	global stop, obstacle 
 	
-	if obstacle_data.data[1] < 2000:
+	if obstacle_data.data[1] < 1500:
 		obstacle = 1
 		if max(obstacle_data.data[0] , obstacle_data.data[2]) < 1000:
 			send_local_ned_velocity(0,0,0)
-			print("Stop, all ways are blocked")
+			print("Stop, all ways are blocked from LiDAR")
 		elif obstacle_data.data[0] < obstacle_data.data[2]:
-			print("turn right")
+			print("turn right from LiDAr")
 			send_local_ned_velocity(1,1,0)
 		else:
-			print("turn left")
+			print("turn left from LiDAR")
 			send_local_ned_velocity(1,-1,0)
 	else:
 		if obstacle == 1:
@@ -179,14 +167,12 @@ def calculation_for_stopage(obstacle_data):
 
 
 def calculation_for_direction_using_segnet(segnet_direction):
-	global point1
-	print(segnet_direction.data)
-	
-	if segnet_direction.data < -3:
-		print("turn left")
+	global point1	
+	if segnet_direction.data < -1:
+		print("turn left from Segnet")
 		send_local_ned_velocity(1,-1,0)
-	elif segnet_direction.data > 3:
-		print("turn right")
+	elif segnet_direction.data > 1:
+		print("turn right from Segnet")
 		send_local_ned_velocity(1,1,0)
 	else:
 		vehicle.simple_goto(point1)
@@ -200,7 +186,8 @@ def next_waypoint_callback(msg):
 
 
 arr = fun(start_lat ,start_lng,end_lat ,end_lng)
-
+print(len(arr))
+print(arr)
 i=1
 
 rospy.init_node('velocity')
@@ -219,8 +206,8 @@ for pts in arr:
 		print("Target: ",pts[0],pts[1])
 		print("going to point ", i)
 		if next_waypoint_flag==True:
-			break
 			next_waypoint_flag=False
+			break
 		time.sleep(3)
 	print("reached pt: ",i)
 	i=i+1

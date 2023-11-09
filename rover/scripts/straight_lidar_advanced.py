@@ -1,31 +1,26 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
 import time
 from coordinates_walking import fun
+#from gps_distance import distance_calculation
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 import rospy
 from std_msgs.msg import Int16
 from std_msgs.msg import Float64MultiArray
 from dronekit import APIException
-from sensor_msgs.msg import Image
-from rospy.numpy_msg import numpy_msg
-import numpy as np
-
-
+from std_msgs.msg import Int32, Bool  # Import Int32 message type
 import socket
-#import exceptions
-import math
 import argparse
 from pymavlink import mavutil
-
+from argparse import ArgumentParser
 # Set up option parsing to get connection string
-parser = argparse.ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
-parser.add_argument('--connect',
-                    help="Vehicle connection target string. If not specified, SITL automatically started and used.")
+print("hi")
+parser = ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
+parser.add_argument('--connect', help="Vehicle connection target string. If not specified, SITL automatically started and used.")
 args = parser.parse_args()
+print("hi")
 
 try:
     connection_string = "/dev/ttyACM0"
@@ -44,14 +39,12 @@ except:
         except:
             print("connected to some new port")
 sitl = None
-
-
-
-# Connect to the Vehicle
-#print('Connecting to vehicle on: %s' % connection_string)
-#vehicle = connect(connection_string, wait_ready=True)
-
-
+#print("in1")
+start_lat = vehicle.location.global_relative_frame.lat #33.645142
+start_lng = vehicle.location.global_relative_frame.lon #-117.842741
+end_lat = 33.644772
+end_lng = -117.842121
+print("in2")
 def arm_and_takeoff(aTargetAltitude):
     """
     Arms vehicle and fly to aTargetAltitude.
@@ -83,7 +76,7 @@ def arm_and_takeoff(aTargetAltitude):
     #   immediately).
     while True:
         print(" Altitude: ", vehicle.location.global_relative_frame.alt)
-        # Break and return from function just below target altitude.
+         # Break and return from function just below target altitude.
         if vehicle.location.global_relative_frame.alt >= aTargetAltitude * 0.95:
             print("Reached target altitude")
             break
@@ -101,7 +94,6 @@ def send_local_ned_velocity(vx, vy, vz):
 		0, 0, 0,
 		0, 0)
 	vehicle.send_mavlink(msg)
-#	print("Sent MAVLink message")
 	vehicle.flush()
 
 def reverse(direction):
@@ -148,130 +140,136 @@ def backup(): ##rough function to easily reverse without needing to use a GPS na
 		print("Waiting for drone to enter GUIDED flight mode")
 		time.sleep(1)
 
-#arm_and_takeoff(-50)
+#arm_and_takeoff(-50) #uncommented this 
 stop = 0
 obstacle = 0
 point1 = None
-'''
-def calculation_for_stopage(data):
-	global point1
-	global stop
-	if data.data < 4000:
-		send_global_ned_velocity(0,0,0)
-		stop = 1
-		#time.sleep(1)
-		print("stopped")
-	else:
-		if stop == 1:
-			vehicle.simple_goto(point1)
-		stop = 0
-'''
+
 def calculation_for_stopage(obstacle_data):
 	global point1
-	print(obstacle_data.data)
 	global stop, obstacle 
 	
-	if obstacle_data.data[1] < 1000:
+	if obstacle_data.data[1] < 1500:
 		obstacle = 1
-		if max(obstacle_data.data[0] , obstacle_data.data[2]) < 500:
+		if max(obstacle_data.data[0] , obstacle_data.data[2]) < 1000:
 			send_local_ned_velocity(0,0,0)
-			print("Stop, all ways are blocked")
+			print("Stop, all ways are blocked from LiDAR")
 		elif obstacle_data.data[0] < obstacle_data.data[2]:
-			print("turn right")
+			print("turn right from LiDAr")
 			send_local_ned_velocity(1,1,0)
 		else:
-			print("turn left")
+			print("turn left from LiDAR")
 			send_local_ned_velocity(1,-1,0)
-	else:
+'''	else:
 		if obstacle == 1:
 			vehicle.simple_goto(point1)
 		obstacle = 0
 '''
-0  1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17
-18 ...
-'''
-height = 0
-width = 0
-def keeping_on_road(segmentation_data):
-	global height, width
-	height = segmentation_data.height
-	width = segmentation_data.width
-	im_str = segmentation_data.data
-	im = np.frombuffer(im_str, dtype=np.uint8).reshape(height, width, -1)
-  	print(im.shape)
-	im = np.squeeze(im)
-	
-	print(im.shape)
-	print(im)
-	zeros = []
-	print(im[0][0])
-	print(im[:0])
-	for i in range(width):
-		col = im[:,i]
-		#print(col)
-		#print("lol")
-		#print(len(col))
-		#print(np.count_nonzero(col))
-		z = len(col) - np.count_nonzero(col)
-		zeros.append(z)
-	print(zeros)
-	time.sleep(4)
 
-rospy.init_node('segmentation')
-#rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
-rospy.Subscriber("/segnet/class_mask", Image, keeping_on_road)
+def calculation_for_direction_using_segnet(segnet_direction):
+	global point1	
+	if segnet_direction.data < -1:
+		print("turn left from Segnet")
+		send_local_ned_velocity(1,-1,0)
+	elif segnet_direction.data > 1:
+		print("turn right from Segnet")
+		send_local_ned_velocity(1,1,0)
+	else:
+		vehicle.simple_goto(point1)
 
-print("Set default/target airspeed to 3")
-#vehicle.airspeed = 3
+next_waypoint_flag=False
 
-# Define the start and end points as latitude and longitude coordinates
-'''
-start_lat = 33.6432884
-start_lng = -117.8411328
-end_lat = 33.643147
-end_lng = -117.841397
-'''
 
-#arr = [[33.644768, -117.842124]]
-#arr = [[33.644887, -117.842260], [33.645057, -117.842449]]
-start_lat = 33.645142 #vehicle.location.global_relative_frame.lat #33.645142
-start_lng = -117.842741 #vehicle.location.global_relative_frame.lon #-117.842741
-end_lat = 33.644765
-end_lng = -117.842129
+def next_waypoint_callback(msg):
+	print("next_wp")
+	#global next_waypoint_flag
+	send_local_ned_velocity(1,1,0)
+	time.sleep(1)
+	#next_waypoint_flag=True
+
+from geopy.distance import geodesic
+
+def distance_calculation(pt1_lat, pt1_lon, pt2_lat, pt2_lon):
+    pt1_co = (pt1_lat, pt1_lon)
+    pt2_co = (pt2_lat, pt2_lon)
+    distance = geodesic(pt1_co, pt2_co).meters
+    return distance
+
+
 #arr = fun(start_lat ,start_lng,end_lat ,end_lng)
-
-#arr = [[start_lat, start_lng],[33.643259,-117.841198]]
+arr = [[33.643322, -117.841024], [33.643488, -117.840712],[33.643561, -117.840563]]
+print(len(arr))
+print(arr)
 i=1
 
-rospy.spin()
+rospy.init_node('velocity')
+rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
+# rospy.Subscriber("segnet_direction", Int32, calculation_for_direction_using_segnet)
+rospy.Subscriber("next_waypoint", Bool, next_waypoint_callback)
+pub = rospy.Publisher('gps_data', Float64MultiArray, queue_size=1)
+rate = rospy.Rate(1)  # 1 Hz
 
-'''print(arr)
+last_lat = start_lat
+last_lon = start_lng
+
 for pts in arr:
+	print(" point")
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
+	print("in2")
 	reached =0
 	vehicle.simple_goto(point1)
+	time.sleep(3)
+#	last_dist = distance_calculation(last_lat, last_lon, float(pts[0]), float(pts[1]))
+	print("in3")
+	#print("Started going straight")
+	#send_local_ned_velocity(1,0,0)
+	#print("Done with straight")
+	#last_lat = vehicle.location.global_relative_frame.lat
+	#last_lon = vehicle.location.global_relative_frame.lon
+	#curr_distance = distance_calculation(last_lat, last_lon, float(pts[0]), float(pts[1]))
+	# = distance_calculation(vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon, float(pts[0]), float(pts[1]))
+	#if(curr_distance > last_dist):
+#		#make U-turn
+#		print("Started Uturn")	 
+#		send_local_ned_velocity(0,1,0)
+#		print("U turn complete")
+	gps_msg = Float64MultiArray()
+
+	while (distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[0],pts[1])>5):
+		print(distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[0],pts[1]))
+		gps_msg.data = [
+		vehicle.location.global_relative_frame.lat,  # Replace with your actual GPS data source for latitude
+		vehicle.location.global_relative_frame.lon,  # Replace with your actual GPS data source for longitude
+		pts[0],
+		pts[1],
+		]
+		print("in while loop1")
+
+		pub.publish(gps_msg)
+		print("in while loop2")
+		send_local_ned_velocity(1,0,0)
+		time.sleep(1)
+	print("in4")
+
+'''
 	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.00001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.00001)):
 		print("Current: ",vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon)
 		print("Target: ",pts[0],pts[1])
 		print("going to point ", i)
+		if next_waypoint_flag==True:
+			next_waypoint_flag=False
+			break
 		time.sleep(3)
 	print("reached pt: ",i)
 	i=i+1
-	time.sleep(5)
+	gps_msg = Float64MultiArray()
+
+	# Populate the multi-array with GPS data (latitude and longitude)
+'''
 	# sleep so we can see the change in map
 
-'''
-'''
-counter=0
-while True:
-	if obstacle == 0:
-	        send_local_ned_velocity(1,0,0) 
-	        print("run")
-	        #time.sleep(1)
-        counter = counter + 1
-'''
 # sleep so we can see the change in map
-time.sleep(2)
+time.sleep(5)
 
 print("Returning to Launch")
 #vehicle.mode = VehicleMode("RTL")

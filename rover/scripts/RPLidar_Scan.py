@@ -32,10 +32,10 @@ if not any(t == '/scan' for t in topics):
     time.sleep(3)
 
 #Initialize listener node 
-rpl.listener()
+rospy.init_node('rplidar_scan')
+#rpl.listener()
 
 distance_pub = rospy.Publisher('nearest_obstacle_distance', Float64MultiArray, queue_size=1)
-rospy.init_node('rplidar_scan')
 delay = rospy.Rate(1)
 
 
@@ -43,27 +43,35 @@ delay = rospy.Rate(1)
 while not rospy.is_shutdown():  
     #Import Scans from ROS topic
     scanvals = rpl.getScan()
-    
     first_index = None
     second_index = None
     third_index = None
+    fourth_index = None
     
     for i, sample in enumerate(scanvals):
-        if sample[1] > -175:
-	    first_index = i
-	    break
+        if sample[1] > -160:
+            first_index = i
+            break
     for i, sample in enumerate(scanvals):
-	if sample[1] > -155:
-	    second_index = i
-	    break
+        if sample[1] > -140:
+            second_index = i
+            break
     for i, sample in enumerate(scanvals):
-        if sample[1] > 175:
-	    third_index = i
-	    break
+        if sample[1] > 140:
+            third_index = i
+            break
+    for i, sample in enumerate(scanvals):
+        if sample[1] > 160:
+            fourth_index = i
+            break
 
     left_portion = scanvals[first_index:second_index,:]
-    right_portion = scanvals[second_index:third_index,:]
-    middle_portion = np.concatenate((scanvals[:first_index,:], scanvals[third_index:,:]), 0)
+    right_portion = scanvals[third_index:fourth_index,:]
+    middle_portion = np.concatenate((scanvals[:first_index,:], scanvals[fourth_index:,:]), 0)
+
+    # left_portion = scanvals[-150:-160,:]
+    # right_portion = scanvals[-160:,:]
+    # middle_portion = np.concatenate((scanvals[:first_index,:], scanvals[third_index:,:]), 0)
 
     print("Detecting middle obstacle")
     middle_obstacle_distance = float('inf')
@@ -71,7 +79,7 @@ while not rospy.is_shutdown():
         if sample[2] < middle_obstacle_distance:
             middle_obstacle_distance = sample[2]
     if middle_obstacle_distance == float('inf'):
-	middle_obstacle_distance = 25000
+        middle_obstacle_distance = 25000
     print("Middle Obstacle Distance is: ")
     print(middle_obstacle_distance)
 
@@ -81,7 +89,7 @@ while not rospy.is_shutdown():
         if sample[2] < left_obstacle_distance:
             left_obstacle_distance = sample[2]
     if left_obstacle_distance == float('inf'):
-	left_obstacle_distance = 25000
+        left_obstacle_distance = 25000
     print("Left Obstacle Distance is: ")
     print(left_obstacle_distance)
 
@@ -91,7 +99,7 @@ while not rospy.is_shutdown():
         if sample[2] < right_obstacle_distance:
             right_obstacle_distance = sample[2]
     if right_obstacle_distance == float('inf'):
-	right_obstacle_distance = 25000
+        right_obstacle_distance = 25000
     print("Right Obstacle Distance is: ")
     print(right_obstacle_distance)
 

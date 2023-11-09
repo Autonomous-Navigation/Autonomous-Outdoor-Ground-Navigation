@@ -3,10 +3,12 @@
 
 import rospy
 import numpy as np
-from sensor_msgs.msg import Image, LaserScan
+from sensor_msgs.msg import Image, LaserScan, CompressedImage
 from std_msgs.msg import Int32MultiArray
 from cv_bridge import CvBridge
 import cv2
+import csv
+import time
 
 width = 512
 height = 256
@@ -20,31 +22,51 @@ class RoverPOVPublisher:
         rospy.init_node('rover_pov_publisher', anonymous=True)
 
         # Initialize your subscribers
-        self.depth_sub = rospy.Subscriber('/camera/depth/image_rect_raw', Image, self.depth_callback)
-        self.mask_sub = rospy.Subscriber('/segnet/class_mask', Image, self.class_mask_callback)
+        #self.depth_sub = rospy.Subscriber('/camera/depth/image_rect_raw', Image, self.depth_callback)
+        #self.mask_sub = rospy.Subscriber('/segnet/class_mask', Image, self.class_mask_callback)
         self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
-
+        #self.compressed_depth_sub = rospy.Subscriber('/camera/depth/image_rect_raw/compressed', CompressedImage, self.compressed_depth_callback)
         # Initialize your publisher
         self.rover_pov_pub = rospy.Publisher('/rover_pov', Int32MultiArray, queue_size=1)
         self.bridge = CvBridge()
         self.delay = rospy.Rate(1)
 
+    def compressed_depth_callback(self, data):
+        cv_image = self.bridge.compressed_imgmsg_to_cv2(data, "passthrough")
+        image_array = np.array(cv_image)
+        with open('compressed_depth_data.csv', 'w') as file:
+                writer = csv.writer(file)
+                writer.writerows(image_array)
+        print(image_array.shape)
+        time.sleep(10)
+
     def depth_callback(self, data):
         global count
-        if count==10:
+        if count==4:
             global rover_pov
             print("In depth callback")
             cv_image = self.bridge.imgmsg_to_cv2(data, "passthrough")  # Convert the ROS Image message to an OpenCV image
-            image_array = np.array(cv_image)
-            print(image_array.shape)
-            depth_image_smooth = cv2.GaussianBlur(image_array, (5, 5), 0)
-            depth_image_gray = (depth_image_smooth * 255.0 / image_array.max()).astype(np.uint8)
+
+            new_width = 512
+            new_height = 256
+            resized_image = cv2.resize(cv_image, (new_width, new_height))
+            image_array = np.array(cv_image, dtype=np.uint16)
+            image_array_roi = image_array[image_array.shape[0]/2:,:]
+            # with open('depth_data.csv', 'w') as file:
+            #     writer = csv.writer(file)
+            #     writer.writerows(image_array)
+            print(image_array_roi.shape)
+           
             
+            depth_image_smooth = cv2.GaussianBlur(image_array_roi, (5, 5), 0)
+            depth_image_gray = (depth_image_smooth * 255.0 / image_array.max()).astype(np.uint8)
+            #print(depth_image_gray.max())
             # Process the depth image as needed
-            threshold_min = 0.5  # Adjust these values
-            threshold_max = 1.0
+            threshold_min = 50  # Adjust these values
+            threshold_max = 150
 
             edges = cv2.Canny(depth_image_gray, threshold_min, threshold_max)
+            '''
 
             # Apply Hough Line Transform
             threshold=50
@@ -84,14 +106,50 @@ class RoverPOVPublisher:
 
 
 
-
+            '''
             # Display the processed depth image
             #cv2.imshow('Processed Depth Image', filtered_image)
-            #cv2.imshow('depth raw', depth_image_gray)
-            cv2.imshow("Lines Detected", line_image)
+            cv2.imshow('ip image', cv_image)
+            cv2.imshow("Lines Detected", edges)
             cv2.waitKey(1)
             count=0
-            #update rover_pov here
+            '''
+            # Get the shape of the input depth array
+            rows, cols = image_array.shape
+
+            # Create an output array to store the shar#p changes
+            #sharp_changes = np.zeros((rows, cols), dtype=np.int32)
+            sharp_changes = np.empty((rows, cols))
+            threshold = 15
+            ng_threshold = -15
+            
+            # Iterate through the depth array
+            for i in range(1, rows - 1):
+                for j in range(1, cols - 1):
+                    center_depth = image_array[i, j]
+                    neighbors = [image_array[i-1, j-1], image_array[i-1, j], image_array[i-1, j+1],
+                                image_array[i, j-1], image_array[i, j+1],
+                                image_array[i+1, j-1], image_array[i+1, j], image_array[i+1, j+1]]
+
+                    # Check if the difference between the center depth and any neighbor exceeds the threshold
+                    #print(neighbors)
+                    depth=False
+                    for neighbor in neighbors:
+                        print(center_depth)
+                        print(neighbor)
+                        diff = abs(center_depth - neighbor)
+                        if diff > threshold:
+                            sharp_changes[i, j] = 255
+                            depth=True
+                            break
+                    #if any(abs(center_depth - neighbor) > threshold for neighbor in neighbors):
+                    #    sharp_changes[i, j] = 255
+                    if depth==True:
+                        sharp_changes[i,j] = 0
+            cv2.imshow("lol", sharp_changes)
+            cv2.waitKey(1)
+            count=0
+            #update rover_pov here'''
         else:
             count=count+1
 
@@ -101,7 +159,9 @@ class RoverPOVPublisher:
         global height
         print("class_mask_callback")
         cv_image = self.bridge.imgmsg_to_cv2(data, "passthrough")  # Convert the ROS Image message to an OpenCV image
+        print(cv_image.shape)
         cv_image = cv2.resize(cv_image, (width, height))
+        print(cv_image.shape)
         image_array = np.array(cv_image)
         new_array = np.where((image_array == 2) | (image_array == 3) | (image_array == 4), 0, 1)
         print(new_array.shape)

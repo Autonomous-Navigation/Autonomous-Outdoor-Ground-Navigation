@@ -2,6 +2,7 @@ import cv2
 import rospy
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
+import time
 bridge = CvBridge()
 edges_image = None
 class_mask_image = None
@@ -18,8 +19,11 @@ def edges_callback(msg):
 	        i=i+1
 	else:
 		cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+		print(cv_image.shape)
+                cv2.imshow("Overlay Image", cv_image)
+		cv2.waitKey(1)
 
-	        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+	        '''gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 	        lol = cv2.Canny(gray, 100, 200)  # Adjust threshold values as needed
 	        edges_image = cv2.cvtColor(lol,cv2.COLOR_GRAY2RGB)
 	        cv2.imwrite("Image" + str(image_count) + ".jpg", edges_image)
@@ -32,9 +36,7 @@ def edges_callback(msg):
 		if class_mask_image is not None:
 	            alpha = 0.8  # Adjust the transparency as needed
 	            overlay_image = cv2.addWeighted(edges_image, 1 - alpha, class_mask_image, alpha, 0)
-	            cv2.imshow("Overlay Image", overlay_image)
-		    cv2.waitKey(1)
-		i=0
+		i=0'''
 
 def class_mask_callback(msg):
         global class_mask_image
@@ -57,10 +59,10 @@ def main():
     rospy.Subscriber('/camera/color/image_raw', Image, edges_callback)
 
     # Subscribe to the class mask topic
-    rospy.Subscriber('/segnet/overlay', Image, class_mask_callback)
+    #rospy.Subscriber('/segnet/overlay', Image, class_mask_callback)
 
     # Create a window for displaying the overlay image
-    cv2.namedWindow("Overlay Image", cv2.WINDOW_NORMAL)
+    #cv2.namedWindow("Overlay Image", cv2.WINDOW_NORMAL)
 
     rospy.spin()
     cv2.destroyAllWindows() 

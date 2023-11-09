@@ -40,7 +40,7 @@ def getScan():
     scanvals = np.concatenate((intensities,angles,ranges),axis=1)
     #deletes rows where intesnity == 0 
     scanvals = np.delete(scanvals, np.where(scanvals[:,0]==0),axis=0)
-    scanvals = np.delete(scanvals, np.where((scanvals[:,1] < 155) & (scanvals[:,1] > -155)), axis=0)
+    scanvals = np.delete(scanvals, np.where((scanvals[:,1] < 140) & (scanvals[:,1] > -140)), axis=0)
     #scanvals = np.delete(scanvals, np.where(scanvals[:,1] < 175), axis=0)
     #inserts a fourth column of zeros for later use
     scanvals = np.insert(scanvals, 3, 0, axis=1)

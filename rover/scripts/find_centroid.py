@@ -16,12 +16,14 @@ def image_callback(msg, offset_publisher):
         return
 
     # Convert the image to grayscale
+    print(                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          )
+    print(cv_image.shape)
     grayscale_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
     # Filter out masks labeled as 3 or 4 (road and vegetation)
-    road_mask = (grayscale_image == 3) | (grayscale_image == 4)
-    print(road_mask.shape)
-    cropped_mask = road_mask[-8:, :]
+    cropped_mask = (grayscale_image == 0) #| (grayscale_image == 3) | (grayscale_image == 4)
+    #print(road_mask.shape)
+#    cropped_mask = road_mask[-8:, :]
     # Find the centroid of the filtered mask
     M = cv2.moments(np.uint8(cropped_mask))
     if M["m00"] != 0:
@@ -30,11 +32,12 @@ def image_callback(msg, offset_publisher):
         rospy.loginfo("Centroid: ({}, {})".format(centroid_x, centroid_y))
         # Calculate the offset from the image center
         image_center_x = cv_image.shape[1] // 2
+        
         offset = centroid_x - image_center_x
-
-        if offset > 3:
+        print(offset)
+        if offset > 1:
             rospy.loginfo("Turn right")
-        elif offset < -3:
+        elif offset < -1:
             rospy.loginfo("Turn left")
 	else:
 	    rospy.loginfo("Go Straight")
