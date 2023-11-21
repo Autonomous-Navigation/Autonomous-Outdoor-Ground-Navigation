@@ -5,12 +5,13 @@ from geopy import distance
 
 # Geocode the start and end points to get their addresses
 def geocode(lat, lng):
-    url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={0}&lon={1}".format(lat, lng)
-    response = requests.get(url).json()
-    return response['display_name']
+	url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={0}&lon={1}".format(lat, lng)
+	response = requests.get(url).json()
+	return response['display_name']
+	
 
 
-def fun(start_lat, start_lng, end_lat, end_lng):
+def fun_coordinates_walking(start_lat, start_lng, end_lat, end_lng):
 
 
 	# Define the start and end points
@@ -40,21 +41,23 @@ def fun(start_lat, start_lng, end_lat, end_lng):
 	# Add a new point every 5 meters along each segment of the path
 	new_path_points = []
 	for i in range(len(path_points) - 1):
-    		p1 = path_points[i]
-    		p2 = path_points[i + 1]
-    		dist = distance.distance((p1[1], p1[0]), (p2[1], p2[0])).meters
+			p1 = path_points[i]
+			p2 = path_points[i + 1]
+			dist = distance.distance((p1[1], p1[0]), (p2[1], p2[0])).meters
 
-    		if dist <= 5:
-        		new_path_points.append([p1[1], p1[0]])  # switch longitude and latitude
-	    	else:
-	        	n_points = int(dist / 5)  # Number of points for every 5 meters
-	        	interval_lat = (p2[1] - p1[1]) / n_points
-	        	interval_lng = (p2[0] - p1[0]) / n_points
-	
-	        	for j in range(n_points + 1):
-	            		lat = p1[1] + (interval_lat * j)
-	            		lng = p1[0] + (interval_lng * j)
-	            		new_path_points.append([lat, lng])  # switch longitude and latitude
+			if dist <= 5:
+				new_path_points.append([p1[1], p1[0]])  # switch longitude and latitude
+			else:
+				n_points = int(dist / 40)  # Number of points for every 5 meters
+				if n_points == 0:
+					break
+				interval_lat = (p2[1] - p1[1]) / n_points
+				interval_lng = (p2[0] - p1[0]) / n_points
+
+				for j in range(n_points + 1):
+						lat = p1[1] + (interval_lat * j)
+						lng = p1[0] + (interval_lng * j)
+						new_path_points.append([lat, lng])  # switch longitude and latitude
 
 	
 	# Create a Folium map centered on the start point
@@ -73,5 +76,3 @@ def fun(start_lat, start_lng, end_lat, end_lng):
 	return(new_path_points)
 	# Display the map
 	#m 
-
-

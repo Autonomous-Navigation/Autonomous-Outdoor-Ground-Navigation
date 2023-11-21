@@ -46,9 +46,11 @@ def class_mask_callback(msg):
 		j=j+1
 	else:
 		class_mask_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+		print(class_mask_image.shape)
 	        #cv2.imshow("Class_mask", class_mask_image)
 		cv2.waitKey(1)
 		j=0
+
 
 def main():
     rospy.init_node('image_subscriber', anonymous=True)
@@ -56,10 +58,10 @@ def main():
 
     # Replace 'your_image_topic' with the name of the ROS topic you want to subscribe to
     #rospy.Subscriber('/video_source/raw', Image, edges_callback)
-    rospy.Subscriber('/camera/color/image_raw', Image, edges_callback)
+#    rospy.Subscriber('/camera/color/image_raw', Image, edges_callback)
 
     # Subscribe to the class mask topic
-    #rospy.Subscriber('/segnet/overlay', Image, class_mask_callback)
+    rospy.Subscriber('/segnet/class_mask', Image, class_mask_callback)
 
     # Create a window for displaying the overlay image
     #cv2.namedWindow("Overlay Image", cv2.WINDOW_NORMAL)

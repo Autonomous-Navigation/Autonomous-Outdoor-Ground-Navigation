@@ -44,7 +44,10 @@ def getScan():
     #scanvals = np.delete(scanvals, np.where(scanvals[:,1] < 175), axis=0)
     #inserts a fourth column of zeros for later use
     scanvals = np.insert(scanvals, 3, 0, axis=1)
-    return scanvals
+    return 
+    
+    
+    scanvals
 
 #executes a child program as a new process which starts a rplidar node and runs rplidar client process to print raw scan data 
 def start():

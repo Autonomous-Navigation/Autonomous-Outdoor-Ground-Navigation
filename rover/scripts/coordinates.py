@@ -6,10 +6,10 @@ import numpy as np
 def fun(start_lat, start_lng, end_lat, end_lng):
 
 # Define the start and end points
-#start_lat =33.64514403550909 
-#start_lng =  -117.84273063954905
-#end_lat = 33.64585607700809
-#end_lng = -117.84198898453141
+	#start_lat =33.64514403550909 
+	#start_lng =  -117.84273063954905
+	#end_lat = 33.64585607700809
+	#end_lng = -117.84198898453141
 
 # Geocode the start and end points to get their addresses
 	start_url = "https://nominatim.openstreetmap.org/reverse?format=json&lat={0}&lon={1}".format(start_lat, start_lng)
@@ -56,6 +56,10 @@ def fun(start_lat, start_lng, end_lat, end_lng):
 	# Add a polyline for the path between the start and end points
 	#path_coords = [(point[1], point[0]) for point in new_path_points]
 	#folium.PolyLine(locations=path_coords, color='blue').add_to(m)
+	#print(new_path_points)
 	return(new_path_points)
 	# Display the map
 	#	m
+
+
+

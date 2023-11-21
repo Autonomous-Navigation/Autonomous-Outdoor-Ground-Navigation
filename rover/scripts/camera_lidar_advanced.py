@@ -3,7 +3,9 @@
 
 from __future__ import print_function
 import time
-from coordinates_walking import fun
+from coordinates_critical import fun_coordinates_critical
+from coordinates_walking import fun_coordinates_walking
+#from gps_distance import distance_calculation
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 import rospy
 from std_msgs.msg import Int16
@@ -14,13 +16,14 @@ import socket
 import argparse
 from pymavlink import mavutil
 from argparse import ArgumentParser
-
-
+from geopy.distance import geodesic
 # Set up option parsing to get connection string
+print("hi")
 parser = ArgumentParser(description='Commands vehicle using vehicle.simple_goto.')
 parser.add_argument('--connect', help="Vehicle connection target string. If not specified, SITL automatically started and used.")
 args = parser.parse_args()
-
+print("hi")
+'''
 try:
     connection_string = "/dev/ttyACM0"
     print('Connecting to vehicle on: %s' % connection_string)
@@ -37,12 +40,14 @@ except:
             vehicle = connect(connection_string, wait_ready=True)
         except:
             print("connected to some new port")
+'''
 sitl = None
 
-start_lat = vehicle.location.global_relative_frame.lat #33.645142
-start_lng = vehicle.location.global_relative_frame.lon #-117.842741
-end_lat = 33.644772
-end_lng = -117.842121
+start_lat = 33.643995 #vehicle.location.global_relative_frame.lat #33.645142
+start_lng = -117.840962 #vehicle.location.global_relative_frame.lon #-117.842741
+end_lat = 33.643283
+end_lng = -117.841136 
+
 
 def arm_and_takeoff(aTargetAltitude):
     """
@@ -75,7 +80,7 @@ def arm_and_takeoff(aTargetAltitude):
     #   immediately).
     while True:
         print(" Altitude: ", vehicle.location.global_relative_frame.alt)
-        # Break and return from function just below target altitude.
+         # Break and return from function just below target altitude.
         if vehicle.location.global_relative_frame.alt >= aTargetAltitude * 0.95:
             print("Reached target altitude")
             break
@@ -123,10 +128,9 @@ def send_global_ned_velocity(vx, vy, vz):
 	vehicle.send_mavlink(msg)
 	vehicle.flush()
 
-
 def backup(): ##rough function to easily reverse without needing to use a GPS navigation based movement
-	mode = "GUIDED "
-	vehicle.mode = VehicleMode(mode)
+	mode = "GUIDED"
+	vehicle.mode = VehicleMode("MANUAL")
 	while vehicle.mode!=mode:
 		print("Waiting for drone to enter MANUAL flight mode")
 		time.sleep(1)
@@ -139,98 +143,197 @@ def backup(): ##rough function to easily reverse without needing to use a GPS na
 		print("Waiting for drone to enter GUIDED flight mode")
 		time.sleep(1)
 
-#arm_and_takeoff(-50) #uncommented this 
+#arm_and_takeoff(-50) 
 stop = 0
 obstacle = 0
 point1 = None
-
-def calculation_for_stopage(obstacle_data):
-	global point1
-	print(obstacle_data.data)
+stop_flag=False
+lidar_direction=0           # value could be 0, -20, 1, -1
+def lidar_processing(obstacle_data):
+	global point1, lidar_direction
 	global stop, obstacle 
 	
-	if obstacle_data.data[1] < 1500:
+	if obstacle_data.data[1] < 2000 and obstacle_data.data[0] > 700 and obstacle_data.data[1] > 700 and obstacle_data.data[2] > 700:
 		obstacle = 1
 		if max(obstacle_data.data[0] , obstacle_data.data[2]) < 1000:
-			send_local_ned_velocity(0,0,0)
+			#send_local_ned_velocity(0,0,0)
+			lidar_direction=-20
 			print("Stop, all ways are blocked from LiDAR")
 		elif obstacle_data.data[0] < obstacle_data.data[2]:
 			print("turn right from LiDAr")
-			send_local_ned_velocity(1,1,0)
+			lidar_direction=1
+			#send_local_ned_velocity(1,1,0)
 		else:
 			print("turn left from LiDAR")
-			send_local_ned_velocity(1,-1,0)
+			lidar_direction=-1
+			#send_local_ned_velocity(1,-1,0)
 	else:
+		lidar_direction=0
+		print("go straight from lidar")
+        '''
 		if obstacle == 1:
 			vehicle.simple_goto(point1)
-		obstacle = 0
+		obstacle = 0'''
 
-
-def calculation_for_direction_using_segnet(segnet_direction):
-	global point1	
-	if segnet_direction.data < -1:
-		print("turn left from Segnet")
-		send_local_ned_velocity(1,-1,0)
-	elif segnet_direction.data > 1:
-		print("turn right from Segnet")
-		send_local_ned_velocity(1,1,0)
+segnet_direction = 0            # value could be 0, -20, 1, -1
+def segnet_processing(segnet_direction_data):
+	global point1,stop_flag, segnet_direction
+	print(segnet_direction_data.data)
+	if segnet_direction_data.data == -20:
+		stop_flag=True
+		print("back up from segnet")
+		segnet_direction=-20
+		#send_local_ned_velocity(-1,0,0)
+		#time.sleep(2)
+	elif segnet_direction_data.data < -4:
+		stop_flag=True
+		print("left from segnet")
+		segnet_direction=-1
+		#send_local_ned_velocity(1,-0.5,0)
+		#time.sleep(2)
+	elif segnet_direction_data.data > 4:
+		stop_flag=True
+		print("right from segnet")
+		segnet_direction=1
+		#send_local_ned_velocity(1,0.5,0)
+		#time.sleep(2)
 	else:
-		vehicle.simple_goto(point1)
+		stop_flag=False
+		print("keep straight from segnet")
+		segnet_direction=0
 
+def rover_motion():
+    global lidar_direction, segnet_direction
+    if segnet_direction==0 and lidar_direction==0:
+		print("go straight from rover_motion")
+		send_local_ned_velocity(1,0,0)
+    elif segnet_direction==-20 or lidar_direction==-20:
+		print("back up from rover_motion")
+		backup()
+		time.sleep(3)
+    elif segnet_direction==0 and lidar_direction==1:
+		print("segnet: straight, lidar: right")
+		send_local_ned_velocity(1,0.3,0)        
+    elif segnet_direction==0 and lidar_direction==-1:
+		print("segnet: straight, lidar: left")
+		send_local_ned_velocity(1,-0.3,0)
+    elif segnet_direction==1 and lidar_direction==0:
+		print("segnet: right, lidar: straight")
+		send_local_ned_velocity(1, 0.5,0)
+		time.sleep(2)
+    elif segnet_direction==-1 and lidar_direction==0:
+		print("segnet: left, lidar: straight")
+		send_local_ned_velocity(1, -0.5,0) 
+		time.sleep(2)
+    elif segnet_direction==1 and lidar_direction==1:
+		print("segnet: right, lidar: right")
+		send_local_ned_velocity(1,0.5,0)
+    elif segnet_direction==-1 and lidar_direction==-1:
+		print("segnet: left, lidar: left")
+		send_local_ned_velocity(1,-0.5,0)
+    elif segnet_direction==1 and lidar_direction==-1:
+		print("segnet: right, lidar: left")
+		print("take sharp right")
+		send_local_ned_velocity(1, 1.5,0) 
+		time.sleep(2)
+    elif segnet_direction==-1 and lidar_direction==1:
+		print("segnet: left, lidar: right")
+		print("take sharp left")
+		send_local_ned_velocity(1, -1.5,0) 
+		time.sleep(2)
+    
 next_waypoint_flag=False
 
 def next_waypoint_callback(msg):
-	global next_waypoint_flag
-	next_waypoint_flag=	True
+	print("next_wp")
+	#global next_waypoint_flag
+	send_local_ned_velocity(1,1,0)
+	time.sleep(1)
+	#next_waypoint_flag=True
 
+def distance_calculation(pt1_lat, pt1_lon, pt2_lat, pt2_lon):
+    pt1_co = (pt1_lat, pt1_lon)
+    pt2_co = (pt2_lat, pt2_lon)
+    distance = geodesic(pt1_co, pt2_co).meters
+    return distance
 
-arr = fun(start_lat ,start_lng,end_lat ,end_lng)
-#arr = [[33.643322, -117.841024], [33.643488, -117.840712],[33.643561, -117.840563]]
+def processarr():
+    global arr
+    length=len(arr)
+    for i in range(length - 1):
+        current_point = arr[i]
+        next_point = arr[i + 1]
 
+        latitude, longitude = current_point[0]
+        distance = current_point[2]
+
+        if distance > 40:
+            new_pt=fun_coordinates_walking(latitude,longitude, next_point[0][0], next_point[0][1])
+            temp=i+1
+            for pt in new_pt:
+                arr.insert(temp,[[pt[0],pt[1]],2,40])
+                temp=temp+1
+                length=length+1
+                i=i+1
+
+def simple_goto_callback(event):
+	global current_target
+	print("calling simple_goto every 15 seconds")
+	vehicle.simple_goto(current_target)
+	time.sleep(2)
+
+arr = fun_coordinates_critical(start_lat ,start_lng,end_lat ,end_lng)
 print(len(arr))
 print(arr)
+processarr()
+print(len(arr))
+print(arr)
+#arr = [[33.643322, -117.841024], [33.643488, -117.840712],[33.643561, -117.840563]]
 i=1
+current_target=LocationGlobalRelative(start_lat, start_lng, 0)
 
 rospy.init_node('velocity')
-rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, calculation_for_stopage)
-#rospy.Subscriber("segnet_direction", Int32, calculation_for_direction_using_segnet)
+rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, lidar_processing,queue_size=1)
+rospy.Subscriber("segnet_direction", Int32, segnet_processing,queue_size=1)
 #rospy.Subscriber("next_waypoint", Bool, next_waypoint_callback)
 pub = rospy.Publisher('gps_data', Float64MultiArray, queue_size=1)
 rate = rospy.Rate(1)  # 1 Hz
+timer = rospy.Timer(rospy.Duration(5), simple_goto_callback)
 
-for pts in arr:
+last_lat = start_lat
+last_lon = start_lng
+
+for critical_pts in arr:
+	pts = critical_pts[0]
+	current_target = pts
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
+
 	reached =0
 	vehicle.simple_goto(point1)
-	while (((vehicle.location.global_relative_frame.lat - pts[0]) > 0.00001) or ((vehicle.location.global_relative_frame.lon - pts[1]) > 0.00001)):
-		print("Current: ",vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon)
-		print("Target: ",pts[0],pts[1])
-		print("going to point ", i)
-		if next_waypoint_flag==True:
-			next_waypoint_flag=False
-			break
-		time.sleep(3)
-	print("reached pt: ",i)
-	i=i+1
+	time.sleep(5)
+
 	gps_msg = Float64MultiArray()
 
-	# Populate the multi-array with GPS data (latitude and longitude)
-	gps_msg.data = [
+	while (distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[1],pts[0])>5):
+		print(distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[1],pts[0]))
+		gps_msg.data = [
 		vehicle.location.global_relative_frame.lat,  # Replace with your actual GPS data source for latitude
 		vehicle.location.global_relative_frame.lon,  # Replace with your actual GPS data source for longitude
 		pts[0],
 		pts[1],
-	]
+		]
 
-	pub.publi0sh(gps_msg)
-	time.sleep(5)
+		pub.publish(gps_msg)
+		rover_motion()
+		time.sleep(1)
+	print("reached the point")
 	# sleep so we can see the change in map
 
 # sleep so we can see the change in map
 time.sleep(5)
 
 print("Returning to Launch")
-vehicle.mode = VehicleMode("RTL")
+#vehicle.mode = VehicleMode("RTL")
 
 # Close vehicle object before exiting script
 print("Close vehicle object")
