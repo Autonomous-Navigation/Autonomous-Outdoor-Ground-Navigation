@@ -6,7 +6,6 @@ We are group of University of California, Irvine graduate students working on de
 
 ### To make your Jetson ready type below commands in the terminal:
 * sudo apt update
-* sudo apt update
 * sudo apt upgrade
 * sudo apt install curl
 * sudo apt-get install nano
