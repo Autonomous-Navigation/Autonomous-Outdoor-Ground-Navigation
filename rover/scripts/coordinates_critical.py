@@ -15,11 +15,12 @@ def geocode(lat, lng):
 
 def fun_coordinates_critical(start_lat, start_lng, end_lat, end_lng):
     '''
-    start_lat = 33.669055351117585
-    start_lng = -117.82680807364599
-    end_lat = 33.643371186511125
-    end_lng = -117.84197631748603
+    start_lat = 33.643553
+    start_lng = -117.842195
+    end_lat = 33.643511
+    end_lng = -117.843127
     '''
+    
 
     start_address = geocode(start_lat, start_lng)
     end_address = geocode(end_lat, end_lng)
@@ -90,12 +91,9 @@ def fun_coordinates_critical(start_lat, start_lng, end_lat, end_lng):
                 break
 
         # Append the direction number and distance as a sublist
-        print(type(coords))
         instructions_list.append([coords, direction_number, distance_value])
-
+    print(instructions_list)
     return instructions_list
-
-
 
 
 

@@ -2,8 +2,8 @@
 
 	<!-- VIDEO SOURCE -->
 	<arg name="input" default="csi://0"/>
-	<arg name="input_width" default="0"/>
-	<arg name="input_height" default="0"/>
+	<arg name="input_width" default="512"/>
+	<arg name="input_height" default="256"/>
 	<arg name="input_codec" default="unknown"/>
 	<arg name="input_loop" default="0"/>
 
@@ -16,7 +16,7 @@
 	</include>
 
 	<!-- DETECTNET -->
-	<arg name="model_name" default="ssd-mobilenet-v2"/>
+	<arg name="model_name" default="dashcamnet"/>
 	<arg name="model_path" default=""/>
 	<arg name="prototxt_path" default=""/>
 	<arg name="class_labels_path" default=""/>

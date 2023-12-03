@@ -22,12 +22,12 @@ class RoverPOVPublisher:
         rospy.init_node('rover_pov_publisher', anonymous=True)
 
         # Initialize your subscribers
-        #self.depth_sub = rospy.Subscriber('/camera/depth/image_rect_raw', Image, self.depth_callback)
+        self.depth_sub = rospy.Subscriber('/camera/depth/image_rect_raw', Image, self.depth_callback)
         #self.mask_sub = rospy.Subscriber('/segnet/class_mask', Image, self.class_mask_callback)
-        self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
+        #self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.scan_callback)
         #self.compressed_depth_sub = rospy.Subscriber('/camera/depth/image_rect_raw/compressed', CompressedImage, self.compressed_depth_callback)
         # Initialize your publisher
-        self.rover_pov_pub = rospy.Publisher('/rover_pov', Int32MultiArray, queue_size=1)
+        #self.rover_pov_pub = rospy.Publisher('/rover_pov', Int32MultiArray, queue_size=1)
         self.bridge = CvBridge()
         self.delay = rospy.Rate(1)
 
@@ -41,117 +41,116 @@ class RoverPOVPublisher:
         time.sleep(10)
 
     def depth_callback(self, data):
-        global count
-        if count==4:
-            global rover_pov
-            print("In depth callback")
-            cv_image = self.bridge.imgmsg_to_cv2(data, "passthrough")  # Convert the ROS Image message to an OpenCV image
+        global rover_pov
+        print("In depth callback")
+        cv_image = self.bridge.imgmsg_to_cv2(data, "passthrough")  # Convert the ROS Image message to an OpenCV image
+        image_array = np.array(cv_image, dtype=np.uint16)
+        '''
+        new_width = 512
+        new_height = 256
+        resized_image = cv2.resize(cv_image, (new_width, new_height))
+        image_array = np.array(cv_image, dtype=np.uint16)
+        image_array_roi = image_array[image_array.shape[0]/2:,:]
+        
+        # with open('depth_data.csv', 'w') as file:
+        #     writer = csv.writer(file)
+        #     writer.writerows(image_array)
+        print(image_array_roi.shape)
+        
+        '''
+        #depth_image_smooth = cv2.GaussianBlur(image_array_roi, (5, 5), 0)
+        depth_image_gray = (image_array * 255.0 / image_array.max()).astype(np.uint8)
+        #print(depth_image_gray.max())
+        # Process the depth image as needed
 
-            new_width = 512
-            new_height = 256
-            resized_image = cv2.resize(cv_image, (new_width, new_height))
-            image_array = np.array(cv_image, dtype=np.uint16)
-            image_array_roi = image_array[image_array.shape[0]/2:,:]
-            # with open('depth_data.csv', 'w') as file:
-            #     writer = csv.writer(file)
-            #     writer.writerows(image_array)
-            print(image_array_roi.shape)
-           
-            
-            depth_image_smooth = cv2.GaussianBlur(image_array_roi, (5, 5), 0)
-            depth_image_gray = (depth_image_smooth * 255.0 / image_array.max()).astype(np.uint8)
-            #print(depth_image_gray.max())
-            # Process the depth image as needed
-            threshold_min = 50  # Adjust these values
-            threshold_max = 150
+        threshold_min = 50  # Adjust these values
+        threshold_max = 150
+        
+        edges = cv2.Canny(depth_image_gray, threshold_min, threshold_max)
 
-            edges = cv2.Canny(depth_image_gray, threshold_min, threshold_max)
-            '''
+        '''
 
-            # Apply Hough Line Transform
-            threshold=50
-            lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold)
+        # Apply Hough Line Transform
+        threshold=50
+        lines = cv2.HoughLines(edges, 1, np.pi / 180, threshold)
 
-            # Draw the detected lines on a copy of the original image
-            line_image = np.copy(edges)
+        # Draw the detected lines on a copy of the original image
+        line_image = np.copy(edges)
 
-            if lines is not None:
-                for line in lines:
-                    rho, theta = line[0]
-                    a = np.cos(theta)
-                    b = np.sin(theta)
-                    x0 = a * rho
-                    y0 = b * rho
-                    x1 = int(x0 + 1000 * (-b))
-                    y1 = int(y0 + 1000 * (a))
-                    x2 = int(x0 - 1000 * (-b))
-                    y2 = int(y0 - 1000 * (a))
-                    cv2.line(line_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        if lines is not None:
+            for line in lines:
+                rho, theta = line[0]
+                a = np.cos(theta)
+                b = np.sin(theta)
+                x0 = a * rho
+                y0 = b * rho
+                x1 = int(x0 + 1000 * (-b))
+                y1 = int(y0 + 1000 * (a))
+                x2 = int(x0 - 1000 * (-b))
+                y2 = int(y0 - 1000 * (a))
+                cv2.line(line_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
-            # Display the image with detected lines
-            
-            
-            contours, _ = cv2.findContours(line_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        # Display the image with detected lines
+        
+        
+        contours, _ = cv2.findContours(line_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-            # Define a minimum contour area or length threshold (adjust as needed)
-            min_contour_area = 100  # You can adjust this value
+        # Define a minimum contour area or length threshold (adjust as needed)
+        min_contour_area = 100  # You can adjust this value
 
-            # Filter out small contours
-            filtered_contours = [contour for contour in contours if cv2.contourArea(contour) > min_contour_area]
+        # Filter out small contours
+        filtered_contours = [contour for contour in contours if cv2.contourArea(contour) > min_contour_area]
 
-            # Create an image with only the filtered contours
-            filtered_image = np.zeros_like(edges)
-            cv2.drawContours(filtered_image, filtered_contours, -1, (255, 255, 255), thickness=cv2.FILLED)
+        # Create an image with only the filtered contours
+        filtered_image = np.zeros_like(edges)
+        cv2.drawContours(filtered_image, filtered_contours, -1, (255, 255, 255), thickness=cv2.FILLED)
 
 
 
 
-            '''
-            # Display the processed depth image
-            #cv2.imshow('Processed Depth Image', filtered_image)
-            cv2.imshow('ip image', cv_image)
-            cv2.imshow("Lines Detected", edges)
-            cv2.waitKey(1)
-            count=0
-            '''
-            # Get the shape of the input depth array
-            rows, cols = image_array.shape
+        '''
+        # Display the processed depth image
+        #cv2.imshow('Processed Depth Image', filtered_image)
+        cv2.imshow('gr', edges)
+        #cv2.imshow("Lines Detected", cv_image)
+        cv2.waitKey(1)
+        '''
+        # Get the shape of the input depth array
+        rows, cols = image_array.shape
 
-            # Create an output array to store the shar#p changes
-            #sharp_changes = np.zeros((rows, cols), dtype=np.int32)
-            sharp_changes = np.empty((rows, cols))
-            threshold = 15
-            ng_threshold = -15
-            
-            # Iterate through the depth array
-            for i in range(1, rows - 1):
-                for j in range(1, cols - 1):
-                    center_depth = image_array[i, j]
-                    neighbors = [image_array[i-1, j-1], image_array[i-1, j], image_array[i-1, j+1],
-                                image_array[i, j-1], image_array[i, j+1],
-                                image_array[i+1, j-1], image_array[i+1, j], image_array[i+1, j+1]]
+        # Create an output array to store the shar#p changes
+        #sharp_changes = np.zeros((rows, cols), dtype=np.int32)
+        sharp_changes = np.empty((rows, cols))
+        threshold = 15
+        ng_threshold = -15
+        
+        # Iterate through the depth array
+        for i in range(1, rows - 1):
+            for j in range(1, cols - 1):
+                center_depth = image_array[i, j]
+                neighbors = [image_array[i-1, j-1], image_array[i-1, j], image_array[i-1, j+1],
+                            image_array[i, j-1], image_array[i, j+1],
+                            image_array[i+1, j-1], image_array[i+1, j], image_array[i+1, j+1]]
 
-                    # Check if the difference between the center depth and any neighbor exceeds the threshold
-                    #print(neighbors)
-                    depth=False
-                    for neighbor in neighbors:
-                        print(center_depth)
-                        print(neighbor)
-                        diff = abs(center_depth - neighbor)
-                        if diff > threshold:
-                            sharp_changes[i, j] = 255
-                            depth=True
-                            break
-                    #if any(abs(center_depth - neighbor) > threshold for neighbor in neighbors):
-                    #    sharp_changes[i, j] = 255
-                    if depth==True:
-                        sharp_changes[i,j] = 0
-            cv2.imshow("lol", sharp_changes)
-            cv2.waitKey(1)
-            count=0
-            #update rover_pov here'''
-        else:
-            count=count+1
+                # Check if the difference between the center depth and any neighbor exceeds the threshold
+                #print(neighbors)
+                depth=False
+                for neighbor in neighbors:
+                    print(center_depth)
+                    print(neighbor)
+                    diff = abs(center_depth - neighbor)
+                    if diff > threshold:
+                        sharp_changes[i, j] = 255
+                        depth=True
+                        break
+                #if any(abs(center_depth - neighbor) > threshold for neighbor in neighbors):
+                #    sharp_changes[i, j] = 255
+                if depth==True:
+                    sharp_changes[i,j] = 0
+        cv2.imshow("lol", sharp_changes)
+        cv2.waitKey(1)
+        count=0
+        #update rover_pov here'''
 
     def class_mask_callback(self, data):
         global rover_pov
@@ -216,9 +215,9 @@ class RoverPOVPublisher:
 
     def run(self):
         while not rospy.is_shutdown():
-            rover_pov_struct = Int32MultiArray()
-            rover_pov_struct.data = rover_pov
-            self.rover_pov_pub.publish(rover_pov_struct)
+            #rover_pov_struct = Int32MultiArray()
+            #rover_pov_struct.data = rover_pov
+            #self.rover_pov_pub.publish(rover_pov_struct)
             self.delay.sleep()
 
 if __name__ == '__main__':

@@ -35,7 +35,6 @@ def getScan():
     for i in range(len(scan.ranges)):
         angles.append(anglemin + angleincr*i)
     angles = np.array(angles[:], copy=False, subok=True, ndmin=2).T
-    print("111111")
     #sets up the scanvals variable as a numpy array with [intensities angles ranges]
     scanvals = np.concatenate((intensities,angles,ranges),axis=1)
     #deletes rows where intesnity == 0 
@@ -44,10 +43,7 @@ def getScan():
     #scanvals = np.delete(scanvals, np.where(scanvals[:,1] < 175), axis=0)
     #inserts a fourth column of zeros for later use
     scanvals = np.insert(scanvals, 3, 0, axis=1)
-    return 
-    
-    
-    scanvals
+    return scanvals
 
 #executes a child program as a new process which starts a rplidar node and runs rplidar client process to print raw scan data 
 def start():
