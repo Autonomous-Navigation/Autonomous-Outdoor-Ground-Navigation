@@ -14,6 +14,7 @@ width = 512
 height = 256
 
 count=0
+time = time.time()
 # Create a NumPy array filled with zeros
 rover_pov = np.zeros((height, width), dtype=int)
 
@@ -44,6 +45,8 @@ class RoverPOVPublisher:
         global rover_pov
         print("In depth callback")
         cv_image = self.bridge.imgmsg_to_cv2(data, "passthrough")  # Convert the ROS Image message to an OpenCV image
+        
+        cv2.imwrite("depth_{}.jpg".format(time), cv_image)
         image_array = np.array(cv_image, dtype=np.uint16)
         '''
         new_width = 512
@@ -111,9 +114,11 @@ class RoverPOVPublisher:
         '''
         # Display the processed depth image
         #cv2.imshow('Processed Depth Image', filtered_image)
-        cv2.imshow('gr', edges)
+        cv2.imwrite("depthcanny_{}.jpg".format(time), edges)
+        print("depth")
+        #cv2.imshow('gr', edges)
         #cv2.imshow("Lines Detected", cv_image)
-        cv2.waitKey(1)
+        #cv2.waitKey(1)
         '''
         # Get the shape of the input depth array
         rows, cols = image_array.shape

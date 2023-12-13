@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+0#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import subprocess
@@ -19,8 +19,8 @@ if __name__ == "__main__":
     time.sleep(5)
     run_command_in_terminal("python RPLidar_Scan.py", "RPLScan")
     time.sleep(5)
-    run_command_in_terminal("python rover_pov_script.py", "POV Depth")
+    #run_command_in_terminal("python rover_pov_script.py", "POV Depth")
     time.sleep(5)
-    run_command_in_terminal("rviz","LIDAR Rviz")
+    #run_command_in_terminal("rviz","LIDAR Rviz")
     time.sleep(5)
-    run_command_in_terminal("python demo.py", "Demo")
+    run_command_in_terminal("python demo_advanced.py", "Demo Advanced")

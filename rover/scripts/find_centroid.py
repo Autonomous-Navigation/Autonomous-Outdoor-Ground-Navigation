@@ -7,6 +7,22 @@ import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from std_msgs.msg import Int32  # Import Int32 message type
+import time
+
+time = time.time()
+
+def overlay_callback(msg):
+    bridge = CvBridge()
+    try:
+        cv_image = bridge.imgmsg_to_cv2(msg, desired_encoding="passthrough")
+    except CvBridgeError as e:
+        rospy.logerr(e)
+        return
+
+    # Convert the image to grayscale
+    cv2.imwrite("overlay{}.jpg".format(time), cv_image)
+    print("overlay image stored")
+    
 
 def image_callback(msg, offset_publisher):
     bridge = CvBridge()
@@ -17,13 +33,16 @@ def image_callback(msg, offset_publisher):
         return
 
     # Convert the image to grayscale
-    print(                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          )
-    print(cv_image.shape)
+    cv2.imwrite("classmask{}.jpg".format(time), cv_image)
+    print("image stored")
     grayscale_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
 
     # Filter out masks labeled as 3 or 4 (road and vegetation)
     #cropped_mask = (grayscale_image == 0)
     whole_cropped_mask = (grayscale_image == 3) | (grayscale_image == 4)
+    scaled_matrix = np.uint8(whole_cropped_mask*255)
+    image = cv2.resize(scaled_matrix,  (512, 256), interpolation=cv2.INTER_NEAREST)
+    cv2.imwrite("o_1{}.jpg".format(time), scaled_matrix)
     cropped_mask = whole_cropped_mask[3:7,:]
     print(cropped_mask)
     height, width = len(cropped_mask), len(cropped_mask[0])
@@ -73,6 +92,7 @@ def semantic_segmentation_listener():
     offset_publisher = rospy.Publisher('/segnet_direction', Int32, queue_size=1)
     
     rospy.Subscriber('/segnet/class_mask', Image, image_callback, offset_publisher)
+    rospy.Subscriber('/segnet/overlay', Image, overlay_callback)
     rospy.spin()
 
 if __name__ == '__main__':

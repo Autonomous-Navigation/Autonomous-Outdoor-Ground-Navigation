@@ -42,8 +42,8 @@ except:
 
 sitl = None
 
-start_lat = vehicle.location.global_relative_frame.lat #33.645142
-start_lng = vehicle.location.global_relative_frame.lon #-117.842741
+#start_lat = vehicle.location.global_relative_frame.lat #33.645142
+#start_lng = vehicle.location.global_relative_frame.lon #-117.842741
 #start_lat = 33.643702
 #start_lng = -117.841964
 end_lat = 33.643598
@@ -319,13 +319,12 @@ def simple_goto_callback(event):
 #arr = [[33.643322, -117.841024], [33.643488, -117.840712],[33.643561, -117.840563]]
 #arr = [[[33.643548, -117.842189], 2, 20], [[33.643494, -117.842572], 2, 20], [[33.643482, -117.842867], 2, 20], [[33.643508, -117.843138], 2, 20]]
 #arr = [[[33.643494, -117.842572], 2, 20], [[33.643482, -117.842867], 2, 20], [[33.643508, -117.843138], 2, 20]]
-#arr = [[[33.643763, -117.841785], 2, 20], [[33.643666, -117.842088], 2, 20], [[33.643599, -117.842524], 2, 20], [[33.643589, -117.843077], 2, 20], [[33.643690, -117.843585], 2, 20], [[33.643780, -117.843915], 2, 20], [[33.643815, -117.844180], 2, 20]]
-arr = [[[33.643666, -117.842088], 2, 20], [[33.643599, -117.842524], 2, 20], [[33.643589, -117.843077], 2, 20], [[33.643599, -117.842524], 2, 20], [[33.643513, -177.843146], 2, 20], [[33.643614, -117.843613], 2, 20], [[33.643190, -117.843898], 2, 20]]
+arr = [[[33.643763, -117.841785], 2, 20], [[33.643666, -117.842088], 2, 20], [[33.643599, -117.842524], 2, 20], [[33.643589, -117.843077], 2, 20], [[33.643690, -117.843585], 2, 20], [[33.643780, -117.843915], 2, 20], [[33.643815, -117.844180], 2, 20]]
 print("The number of waypoints are: ", len(arr))
 print(arr)
 i=1
 #current_target=LocationGlobalRelative(start_lat, start_lng, 0)
-current_target = LocationGlobalRelative(float(arr[0][0][0]),float(arr[0][0][1]), 0)
+#current_target = LocationGlobalRelative(float(arr[0][0][0]),float(arr[0][0][1]), 0)
 
 rospy.init_node('agni')
 rospy.Subscriber("nearest_obstacle_distance", Float64MultiArray, lidar_processing,queue_size=1)
@@ -339,36 +338,24 @@ pub_direction = rospy.Publisher('direction_graphics', Int32MultiArray, queue_siz
 rospy.Subscriber("/krishnaaaa", String, simple_goto_callback, queue_size=1)
 #rospy.Subscriber("simple_goto_topic", String, simple_goto_callback, queue_size=1)
 
-last_lat = start_lat
-last_lon = start_lng
+#last_lat = start_lat
+#last_lon = start_lng
 
 for critical_pts in arr:
+    
 	pts = critical_pts[0]
-	print(pts)
 	point1 = LocationGlobalRelative(float(pts[0]),float(pts[1]), 0)
-	current_target = point1
-	reached =0
+	#current_target = point1
+	#reached =0
 	vehicle.simple_goto(point1)
 	time.sleep(5)
-
+    
 	gps_msg = Float64MultiArray()
 	distance_msg = Float64MultiArray()
-	while ((distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[0],pts[1])>10) or next_waypoint_flag==False):
-		print("Next waypoint distance:", distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[0],pts[1]))
-		distance = distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[0],pts[1])
-		print(str(vehicle.location.global_relative_frame.lat) + " " + str(vehicle.location.global_relative_frame.lon))
-		distance_msg.data = [distance]
-		gps_msg.data = [
-		vehicle.location.global_relative_frame.lat,  # Replace with your actual GPS data source for latitude
-		vehicle.location.global_relative_frame.lon,  # Replace with your actual GPS data source for longitude
-		pts[0],
-		pts[1],
-		]
-		
-		pub_waypoint.publish(distance_msg)
-		pub.publish(gps_msg)
-		rover_motion()
-		time.sleep(1)
+	print("Current location: " + str(vehicle.location.global_relative_frame.lat) + " " + str(vehicle.location.global_relative_frame.lon))
+	distance = distance_calculation(vehicle.location.global_relative_frame.lat,vehicle.location.global_relative_frame.lon,pts[0],pts[1])
+	rover_motion()
+	time.sleep(1)
 	print("reached the point")
 	if next_waypoint_flag == True:
 		next_waypoint_flag = False
